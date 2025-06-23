@@ -82,3 +82,15 @@ variable "project_profiles" {
 variable "DOMAIN_KMS_KEY_ALIAS" {
   type = string
 }
+
+variable SMUS_DOMAIN_VPC_ID {
+  type = string
+}
+
+variable SMUS_DOMAIN_PRIVATE_SUBNET_IDS {
+  type = string
+}
+
+variable SMUS_DOMAIN_AVAILABILITY_ZONE_NAMES {
+  type = string
+}

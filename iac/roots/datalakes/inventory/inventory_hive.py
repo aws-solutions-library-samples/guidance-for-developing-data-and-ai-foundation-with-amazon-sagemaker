@@ -8,7 +8,6 @@ from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
-from awsglue.dynamicframe import DynamicFrame
 from pyspark.sql.functions import *
 
 # Configure simple logging
@@ -56,7 +55,7 @@ try:
     row_count = source_df.count()
     logger.info(f"Loaded {row_count} rows from source file")
     
-    # Write to Iceberg table
+    # Write to Hive table
     logger.info("Writing data to Hive table...")
     source_df.createOrReplaceTempView('temp')
 

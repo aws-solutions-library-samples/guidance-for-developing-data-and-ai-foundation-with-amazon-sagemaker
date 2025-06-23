@@ -884,3 +884,85 @@ resource "aws_kms_alias" "dynamodb_primary_key_alias" {
   name          = "alias/${var.APP}-${var.ENV}-dynamodb-secret-key"
   target_key_id = aws_kms_key.dynamodb_primary_key.id
 }
+
+resource "aws_kms_key" "msk_primary_key" {
+
+  provider            = aws.primary
+
+  enable_key_rotation = true
+  description         = "${var.APP}-${var.ENV}-msk-secret-key"
+
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Id": "key-default-1",
+  "Statement": [
+    {
+      "Sid": "Enable IAM User Permissions",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::${local.account_id}:root"
+      },
+      "Action": "kms:*",
+      "Resource": "*"
+    }
+  ]
+}
+POLICY
+
+  tags = {
+    Application = var.APP
+    Environment = var.ENV
+    Usage       = "msk"
+    Name        = "${var.APP}-${var.ENV}-msk-secret-key"
+  }
+}
+
+resource "aws_kms_alias" "msk_primary_key_alias" {
+
+  provider      = aws.primary
+
+  name          = "alias/${var.APP}-${var.ENV}-msk-secret-key"
+  target_key_id = aws_kms_key.msk_primary_key.key_id
+}
+
+resource "aws_kms_key" "msk_secondary_key" {
+
+  provider            = aws.secondary
+
+  enable_key_rotation = true
+  description         = "${var.APP}-${var.ENV}-msk-secret-key"
+
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Id": "key-default-1",
+  "Statement": [
+    {
+      "Sid": "Enable IAM User Permissions",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::${local.account_id}:root"
+      },
+      "Action": "kms:*",
+      "Resource": "*"
+    }
+  ]
+}
+POLICY
+
+  tags = {
+    Application = var.APP
+    Environment = var.ENV
+    Usage       = "msk"
+    Name        = "${var.APP}-${var.ENV}-msk-secret-key"
+  }
+}
+
+resource "aws_kms_alias" "msk_secondary_key_alias" {
+
+  provider      = aws.secondary
+
+  name          = "alias/${var.APP}-${var.ENV}-msk-secret-key"
+  target_key_id = aws_kms_key.msk_secondary_key.key_id
+}

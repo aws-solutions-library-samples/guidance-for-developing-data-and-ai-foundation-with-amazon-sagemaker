@@ -8,6 +8,11 @@ AWS_SECONDARY_REGION    = "###AWS_SECONDARY_REGION###"
 SSM_KMS_KEY_ALIAS       = "###APP_NAME###-###ENV_NAME###-systems-manager-secret-key"
 DOMAIN_KMS_KEY_ALIAS    = "###APP_NAME###-###ENV_NAME###-glue-secret-key"
 
+//add your own vpc information, or null if you created vpc in this workshop
+SMUS_DOMAIN_VPC_ID                  = null
+SMUS_DOMAIN_PRIVATE_SUBNET_IDS      = null
+SMUS_DOMAIN_AVAILABILITY_ZONE_NAMES = null
+
 blueprint_ids = [
     "5rd9qqcc5hdujr",
     "anmndpxu191nqf",

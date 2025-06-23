@@ -6,6 +6,7 @@ ENV                        = "###ENV_NAME###"
 AWS_PRIMARY_REGION         = "###AWS_PRIMARY_REGION###"
 AWS_SECONDARY_REGION       = "###AWS_SECONDARY_REGION###"
 SSM_KMS_KEY_ALIAS          = "###APP_NAME###-###ENV_NAME###-systems-manager-secret-key"
+LAMBDA_BUCKET              = "###APP_NAME###-###ENV_NAME###-lambda-bucket"
 PERMISSION_SETS = {
   "Admin" = {
     name             = "Admin"

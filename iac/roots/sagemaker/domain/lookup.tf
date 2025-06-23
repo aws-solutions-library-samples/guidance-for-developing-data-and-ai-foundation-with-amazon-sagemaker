@@ -46,8 +46,8 @@ locals {
   SMUS_DOMAIN_EXECUTION_ROLE_ARN      = data.aws_ssm_parameter.smus_domain_execution_role_arn.value
   SMUS_DOMAIN_SERVICE_ROLE_ARN        = data.aws_ssm_parameter.smus_domain_service_role_arn.value
   SMUS_PROJECTS_BUCKET_S3_URL         = data.aws_ssm_parameter.smus_projects_bucket_s3_url.value
-  SMUS_DOMAIN_VPC_ID                  = data.aws_ssm_parameter.smus_domain_vpc_id.value
-  SMUS_DOMAIN_PRIVATE_SUBNET_IDS      = data.aws_ssm_parameter.smus_domain_private_subnet_ids.value
-  SMUS_DOMAIN_AVAILABILITY_ZONE_NAMES = data.aws_ssm_parameter.smus_domain_availability_zone_names.value
+  SMUS_DOMAIN_VPC_ID                  = "${var.SMUS_DOMAIN_VPC_ID==null?  data.aws_ssm_parameter.smus_domain_vpc_id.value : var.SMUS_DOMAIN_VPC_ID}"
+  SMUS_DOMAIN_PRIVATE_SUBNET_IDS      = "${var.SMUS_DOMAIN_PRIVATE_SUBNET_IDS==null? data.aws_ssm_parameter.smus_domain_private_subnet_ids.value : var.SMUS_DOMAIN_PRIVATE_SUBNET_IDS}"
+  SMUS_DOMAIN_AVAILABILITY_ZONE_NAMES = "${var.SMUS_DOMAIN_AVAILABILITY_ZONE_NAMES==null? data.aws_ssm_parameter.smus_domain_availability_zone_names.value : var.SMUS_DOMAIN_AVAILABILITY_ZONE_NAMES}"
   SMUS_DOMAIN_USER_MAPPINGS           = data.aws_ssm_parameter.user_mappings.value
 }

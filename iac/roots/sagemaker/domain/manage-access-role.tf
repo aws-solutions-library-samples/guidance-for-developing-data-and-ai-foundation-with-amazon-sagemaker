@@ -88,16 +88,17 @@ resource "aws_kms_key_policy" "smus_domain_manage_access_role_kms_policy" {
         Action   = "kms:*"
         Resource = "*"
       },
+      # {
+      #   Sid    = "Allow access for SageMaker Lakehouse Federated Query"
+      #   Effect = "Allow"
+      #   Principal = {
+      #     AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/SageMakerStudioQueryExecutionRole"
+      #   }
+      #   Action   = "kms:*"
+      #   Resource = "*"
+      # },
       {
-        Sid    = "Allow access for SageMaker Lakehouse Federated Query"
-        Effect = "Allow"
-        Principal = {
-          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/SageMakerStudioQueryExecutionRole"
-        }
-        Action   = "kms:*"
-        Resource = "*"
-      },
-      {
+        Sid    = "TO BE SCOPED DOWN - Allow access for SageMaker Lakehouse Federated Query"
         Effect = "Allow"
         Principal = {
           Service = "glue.amazonaws.com"

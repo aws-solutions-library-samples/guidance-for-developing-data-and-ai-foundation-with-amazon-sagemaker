@@ -152,7 +152,7 @@ resource "aws_iam_role" "identity_role" {
 
   for_each = {
     for k, v in var.PERMISSION_SETS : k => v
-    if k != "Admin"
+    if k != var.ADMIN_ROLE
   }
 
   name = replace(each.key, " ", "-")

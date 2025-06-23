@@ -21,6 +21,11 @@ variable "AWS_SECONDARY_REGION" {
   type = string
 }
 
+variable "ADMIN_ROLE" {
+
+  type = string
+}
+
 variable "GROUPS" {
 
   type = list(string)

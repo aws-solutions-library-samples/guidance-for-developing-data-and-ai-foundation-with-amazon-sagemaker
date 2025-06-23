@@ -49,3 +49,12 @@ variable "PERMISSION_SETS" {
 variable "SSM_KMS_KEY_ALIAS" {
   type = string
 }
+
+variable "LAMBDA_BUCKET" {
+  description = "S3 bucket name for Lambda zip"
+}
+
+variable "LAMBDA_KEY" {
+  description = "S3 key (path) to the zip file"
+  default     = "lambda/instance_creation"
+}

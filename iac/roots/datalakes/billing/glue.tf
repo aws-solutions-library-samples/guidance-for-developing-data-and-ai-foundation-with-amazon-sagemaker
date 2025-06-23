@@ -929,7 +929,7 @@ resource "aws_glue_job" "billing_s3_create_job" {
   }
 
   default_arguments = {
-    "--extra-jars"       = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.5.jar"
+    "--extra-jars"       = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.7.jar"
     "--NAMESPACE"        = var.APP
     "--TABLE_BUCKET_ARN" = "arn:aws:s3tables:${var.AWS_PRIMARY_REGION}:${var.AWS_ACCOUNT_ID}:bucket/${var.APP}-${var.ENV}-billing"
     "--datalake-formats" = "iceberg"
@@ -959,7 +959,7 @@ resource "aws_glue_job" "billing_s3_delete_job" {
   }
 
   default_arguments = {
-    "--extra-jars"       = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.5.jar"
+    "--extra-jars"       = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.7.jar"
     "--NAMESPACE"        = var.APP
     "--TABLE_BUCKET_ARN" = "arn:aws:s3tables:${var.AWS_PRIMARY_REGION}:${var.AWS_ACCOUNT_ID}:bucket/${var.APP}-${var.ENV}-billing"
     "--datalake-formats" = "iceberg"
@@ -989,13 +989,19 @@ resource "aws_glue_job" "billing_s3_job" {
   }
 
   default_arguments = {
-    "--SOURCE_DATABASE_NAME" = aws_glue_catalog_database.glue_database.name
-    "--SOURCE_TABLE_NAME"    = aws_glue_catalog_table.billing_hive.name
+    "--SOURCE_FILE"          = var.BILLING_DATA_FILE
     "--NAMESPACE"            = var.APP
     "--TABLE_BUCKET_ARN"     = "arn:aws:s3tables:${var.AWS_PRIMARY_REGION}:${var.AWS_ACCOUNT_ID}:bucket/${var.APP}-${var.ENV}-billing"
-    "--extra-jars"           = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.5.jar"
+    "--extra-jars"           = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.7.jar"
     "--datalake-formats"     = "iceberg"
     "--user-jars-first"      = "true"
+    "--TempDir"                          = var.GLUE_TEMP_BUCKET
+    "--enable-continuous-cloudwatch-log" = "true"
+    "--enable-job-insights"              = "true"
+    "--enable-metrics"                   = "true"
+    "--enable-observability-metrics"     = "true"
+    "--enable-spark-ui"                  = "true"
+    "--spark-event-logs-path"            = var.GLUE_SPARK_LOGS_BUCKET
   }
 
   tags = {

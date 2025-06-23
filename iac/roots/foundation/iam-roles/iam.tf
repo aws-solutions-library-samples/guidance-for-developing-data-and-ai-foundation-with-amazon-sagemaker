@@ -136,6 +136,18 @@ resource "aws_iam_role_policy_attachment" "glue_glue_service_attachment" {
   role       = aws_iam_role.aws_iam_glue_role.id
 }
 
+resource "aws_iam_role_policy_attachment" "glue_s3_tables_full_access_attachment" {
+
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3TablesFullAccess"
+  role       = aws_iam_role.aws_iam_glue_role.id
+}
+
+resource "aws_iam_role_policy_attachment" "glue_s3_full_access_attachment" {
+
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+  role       = aws_iam_role.aws_iam_glue_role.id
+}
+
 resource "aws_iam_role_policy" "glue_policy" {
 
   name = "${var.APP}-${var.ENV}-glue-policy"
@@ -162,6 +174,9 @@ resource "aws_iam_role_policy" "glue_policy" {
           "arn:aws:s3:::${var.APP}-${var.ENV}-billing-hive-primary/*",
           "arn:aws:s3:::${var.APP}-${var.ENV}-inventory-hive-primary/*",
           "arn:aws:s3:::${var.APP}-${var.ENV}-splunk-iceberg-primary/*",
+          "arn:aws:s3:::${var.APP}-${var.ENV}-price-data-primary/*",
+          "arn:aws:s3:::${var.APP}-${var.ENV}-price-hive-primary/*",
+          "arn:aws:s3:::${var.APP}-${var.ENV}-price-iceberg-primary/*",
           "arn:aws:s3:::${var.APP}-${var.ENV}-glue-scripts-primary/*",
           "arn:aws:s3:::${var.APP}-${var.ENV}-glue-dependencies-primary/*",
           "arn:aws:s3:::${var.APP}-${var.ENV}-glue-jars-primary/*",
@@ -223,13 +238,16 @@ resource "aws_iam_role_policy" "glue_policy" {
           "s3tables:RenameTable",
           "s3tables:GetTableData",
           "s3tables:PutTableData",
+          "s3tables:*",
         ]
         Resource = "arn:aws:s3tables:${local.region}:${local.account_id}:bucket/*"
       },
       {
         Effect = "Allow"
         Action = [
-          "lakeformation:GetDataAccess"
+          "lakeformation:GetDataAccess",
+          "lakeformation:GetTemporaryGlueTableCredentials",
+          "lakeformation:GetTemporaryGluePartitionCredentials"
         ]
         Resource = ["*"]
       },
@@ -248,6 +266,92 @@ resource "aws_iam_role_policy" "glue_policy" {
           "cloudtrail:LookupEvents"
         ],
         Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "lakeformation:*"
+        ],
+        Resource = "*"
+      },
+      {
+        Action = [
+          "kafka-cluster:Connect",
+          "kafka-cluster:DescribeCluster",
+          "kafka-cluster:AlterCluster",
+          "kafka-cluster:*Topic*",
+          "kafka-cluster:WriteData",
+          "kafka-cluster:ReadData",
+          "kafka-cluster:DescribeGroup",
+          "kafka-cluster:AlterGroup",
+          "kafka-cluster:*"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Action = [
+          "kafka:DescribeCluster",
+          "kafka:GetBootstrapBrokers",
+          "kafka:ListClusters",
+          "kafka:*"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kafka:DescribeCluster",
+          "kafka:GetBootstrapBrokers",
+          "kafka:ListClusters"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kafka-cluster:Connect",
+          "kafka-cluster:AlterCluster",
+          "kafka-cluster:DescribeCluster"
+        ]
+        Resource = "arn:aws:kafka:${var.AWS_PRIMARY_REGION}:${data.aws_caller_identity.current.account_id}:cluster/${var.APP}-${var.ENV}-msk-cluster/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kafka-cluster:*Topic*",
+          "kafka-cluster:WriteData",
+          "kafka-cluster:ReadData"
+        ]
+        Resource = "arn:aws:kafka:${var.AWS_PRIMARY_REGION}:${data.aws_caller_identity.current.account_id}:topic/${var.APP}-${var.ENV}-msk-cluster/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kafka-cluster:AlterGroup",
+          "kafka-cluster:DescribeGroup"
+        ]
+        Resource = "arn:aws:kafka:${var.AWS_PRIMARY_REGION}:${data.aws_caller_identity.current.account_id}:group/${var.APP}-${var.ENV}-msk-cluster/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters"
+        ]
+        Resource = [
+          "arn:aws:ssm:${var.AWS_PRIMARY_REGION}:${data.aws_caller_identity.current.account_id}:parameter/${var.APP}/${var.ENV}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = [
+          "arn:aws:secretsmanager:${var.AWS_PRIMARY_REGION}:${data.aws_caller_identity.current.account_id}:secret:${var.APP}-${var.ENV}-msk-endpoint*"
+        ]
       }
     ]
   })
@@ -1211,7 +1315,8 @@ resource "aws_iam_policy" "quicksight_custom_service_policy" {
           "arn:aws:s3:::${var.APP}-${var.ENV}-glue-*",
           "arn:aws:s3:::${var.APP}-${var.ENV}-iceberg-*",
           "arn:aws:s3:::${var.APP}-${var.ENV}-inventory-*",
-          "arn:aws:s3:::${var.APP}-${var.ENV}-billing-*"
+          "arn:aws:s3:::${var.APP}-${var.ENV}-billing-*",
+          "arn:aws:s3:::${var.APP}-${var.ENV}-price-*"
         ]
       },
       {

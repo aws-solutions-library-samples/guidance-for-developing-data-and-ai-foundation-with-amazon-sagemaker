@@ -27,7 +27,10 @@ In order to execute this deployment, please ensure you have installed the follow
 * [make](https://www.gnu.org/software/make/)
 * [jq](https://stedolan.github.io/jq/)
 
-*Note: Make sure the machine you are deploying from has up to 15 GB free space to deploy the entire solution. We have included a clean up script (module 21) to clean up the cache in the local machine after deployment.* 
+*Note: Make sure the machine you are deploying from has up to 15 GB free space to deploy the entire solution. We have included a clean up script (module 21) to clean up the cache in the local machine after deployment.*
+
+> [!CAUTION]
+> We are using the latest version 5 for the AWS Terraform provider (v 5.100) in every module of this solution. Please do not update providers to the latest version 6 as it will break the deployment process.
 
 ### Clone the code base
 

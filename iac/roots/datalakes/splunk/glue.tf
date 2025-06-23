@@ -238,7 +238,7 @@ resource "aws_glue_job" "splunk_s3_job" {
   }
 
   default_arguments = {
-    "--extra-jars"                       = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.5.jar"
+    "--extra-jars"                       = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.7.jar"
     "--TABLE_BUCKET_ARN"                 = "arn:aws:s3tables:${var.AWS_PRIMARY_REGION}:${var.AWS_ACCOUNT_ID}:bucket/${var.APP}-${var.ENV}-splunk"
     "--SPLUNK_HOST"                      = aws_instance.splunk.private_ip
     "--SPLUNK_SECRET_NAME"               = aws_secretsmanager_secret.splunk_credentials.arn
@@ -274,7 +274,7 @@ resource "aws_glue_job" "splunk_s3_create_job" {
   }
 
   default_arguments = {
-    "--extra-jars"       = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.5.jar"
+    "--extra-jars"       = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.7.jar"
     "--TABLE_BUCKET_ARN" = "arn:aws:s3tables:${var.AWS_PRIMARY_REGION}:${var.AWS_ACCOUNT_ID}:bucket/${var.APP}-${var.ENV}-splunk"
     "--NAMESPACE"        = var.APP
     "--datalake-formats" = "iceberg"
@@ -304,7 +304,7 @@ resource "aws_glue_job" "splunk_s3_delete_job" {
   }
 
   default_arguments = {
-    "--extra-jars"       = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.5.jar"
+    "--extra-jars"       = "s3://${var.APP}-${var.ENV}-glue-jars-primary/s3-tables-catalog-for-iceberg-runtime-0.1.7.jar"
     "--TABLE_BUCKET_ARN" = "arn:aws:s3tables:${var.AWS_PRIMARY_REGION}:${var.AWS_ACCOUNT_ID}:bucket/${var.APP}-${var.ENV}-splunk"
     "--NAMESPACE"        = var.APP
     "--datalake-formats" = "iceberg"
