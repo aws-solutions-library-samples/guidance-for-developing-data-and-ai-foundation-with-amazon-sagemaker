@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT-0
 
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Terraform back end resources, which replicate to another region"
+Description: "Terraform back end resources, which replicate to another region (SO9611)"
 
 Parameters:
   bucketName:
