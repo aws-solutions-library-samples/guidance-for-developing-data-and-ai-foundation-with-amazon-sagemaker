@@ -76,3 +76,7 @@ __pycache__
 
 # SageMaker domain output files
 iac/roots/sagemaker/domain/*.out
+
+# Claude Code local files
+.claude/
+CLAUDE.md
