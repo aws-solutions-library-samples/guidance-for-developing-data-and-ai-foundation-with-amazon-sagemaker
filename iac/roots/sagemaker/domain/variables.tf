@@ -29,26 +29,26 @@ variable "SSM_KMS_KEY_ALIAS" {
 variable "blueprint_ids" {
   type        = list(string)
   description = "List of environment blueprint IDs to attach. This is a pre-defined list of identifiers already available in an account"
-  default = []
+  default     = []
 }
 
 variable "domain_user_ids" {
   type        = list(string)
   description = "List of domain user IDs to attach to the domain. Use the userId attribute from Identity Center."
-  default = []
+  default     = []
 }
 
 variable "domain_admin_ids" {
   type        = list(string)
   description = "List of domain admin IDs to attach to the domain. Use the userId attribute from Identity Center."
-  default = []
+  default     = []
 }
 
 variable "project_profiles" {
   type = list(object({
-    name = string
+    name        = string
     description = string
-    status = string
+    status      = string
     environmentConfigurations = list(object({
       awsAccount = object({
         awsAccountId = string
@@ -60,12 +60,12 @@ variable "project_profiles" {
         parameterOverrides = optional(list(object({
           isEditable = bool
           name       = string
-          value      = optional(string, "")
+          value      = optional(string)
         })))
         resolvedParameters = list(object({
           isEditable = bool
           name       = string
-          value = optional(string, "")
+          value      = optional(string)
         }))
       })
       deploymentMode         = string
@@ -83,14 +83,14 @@ variable "DOMAIN_KMS_KEY_ALIAS" {
   type = string
 }
 
-variable SMUS_DOMAIN_VPC_ID {
+variable "SMUS_DOMAIN_VPC_ID" {
   type = string
 }
 
-variable SMUS_DOMAIN_PRIVATE_SUBNET_IDS {
+variable "SMUS_DOMAIN_PRIVATE_SUBNET_IDS" {
   type = string
 }
 
-variable SMUS_DOMAIN_AVAILABILITY_ZONE_NAMES {
+variable "SMUS_DOMAIN_AVAILABILITY_ZONE_NAMES" {
   type = string
 }

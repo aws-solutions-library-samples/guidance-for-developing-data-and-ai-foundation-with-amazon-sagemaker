@@ -2,145 +2,111 @@
 // SPDX-License-Identifier: MIT-0
 
 locals {
-  # For each profile object in var.project_profiles, get the environmentConfigurations attribute which is a list. Iterate through the environmentConfigurations, and override the awsAccountId and regionName attributes
+  # Transform project_profiles from camelCase (tfvars) to snake_case (AWSCC resource)
+  # Override awsAccountId and regionName with actual values from the current deployment
   project_profiles = [
     for profile in var.project_profiles : {
-      name = profile.name
+      name        = profile.name
       description = profile.description
-      status = profile.status
+      status      = profile.status
 
-      environmentConfigurations = [
-        for environmentConfig in profile.environmentConfigurations : merge(
-        {
-          deploymentMode = environmentConfig.deploymentMode
-          name = environmentConfig.name
-          description = environmentConfig.description
-          environmentBlueprintId = environmentConfig.environmentBlueprintId
-          awsAccount = {
-            awsAccountId = local.account_id
+      environment_configurations = [
+        for env_config in profile.environmentConfigurations : {
+          deployment_mode          = env_config.deploymentMode
+          deployment_order         = env_config.deploymentOrder
+          name                     = env_config.name
+          description              = env_config.description
+          environment_blueprint_id = env_config.environmentBlueprintId
+          aws_account = {
+            aws_account_id = local.account_id
           }
-          awsRegion = {
-            regionName = local.region
+          aws_region = {
+            region_name = local.region
           }
-          configurationParameters = merge({
-            resolvedParameters = [
-              for param in environmentConfig.configurationParameters.resolvedParameters: merge({
-                isEditable = param.isEditable
-                name = param.name
-              }, param.value != null ? { value = param.value } : {})
+          configuration_parameters = {
+            resolved_parameters = [
+              for param in env_config.configurationParameters.resolvedParameters : {
+                is_editable = param.isEditable
+                name        = param.name
+                value       = param.value
+              }
             ]
-          }, environmentConfig.configurationParameters.parameterOverrides != null ? {
-              parameterOverrides = [
-                for param in environmentConfig.configurationParameters.parameterOverrides: merge({
-                  isEditable = param.isEditable
-                  name = param.name
-                }, param.value != null ? { value = param.value } : {})
-              ]
-            } : {}
-          )
-          description = environmentConfig.description
-        },
-        environmentConfig.deploymentOrder != null && can(tonumber(environmentConfig.deploymentOrder)) ? {
-          deploymentOrder = environmentConfig.deploymentOrder
-        } : {}
-      )
-    ]
-  }]
+            parameter_overrides = env_config.configurationParameters.parameterOverrides != null ? [
+              for param in env_config.configurationParameters.parameterOverrides : {
+                is_editable = param.isEditable
+                name        = param.name
+                value       = param.value
+              }
+            ] : null
+          }
+        }
+      ]
+    }
+  ]
 }
 
-# Create Project Profiles
-resource "null_resource" "create_project_profile" {
+# Create Project Profiles using native AWSCC resource
+resource "awscc_datazone_project_profile" "project_profiles" {
 
-  for_each = { for idx, profile in local.project_profiles : idx => profile }
+  for_each = { for idx, profile in local.project_profiles : tostring(idx) => profile }
 
-  triggers = {
-    domain_id = local.domain_id
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      aws datazone create-project-profile \
-        --domain-identifier ${local.domain_id} \
-        --name "${each.value.name}" \
-        --description "${each.value.description}" \
-        --environment-configurations '${jsonencode(each.value.environmentConfigurations)}' \
-        --status "${each.value.status}" \
-        --region "${local.region}" \
-        --output json \
-        --query '{id:id, name:name}' > create_project_profile_output_${each.key}.txt.out
-    EOT
-  } 
+  domain_identifier          = local.domain_id
+  name                       = each.value.name
+  description                = each.value.description
+  status                     = each.value.status
+  environment_configurations = each.value.environment_configurations
 }
 
-# Collect the output from each 'create_project-profile' call
-data "local_file" "create_project_profile_results" {
-
-  count       = length(local.project_profiles)
-  depends_on  = [ null_resource.create_project_profile ]
-
-  filename = "create_project_profile_output_${count.index}.txt.out"
-}
-
-# Each file contains output in this format
-# {
-#    "id": "3t63mukn4n5dev",
-#    "name": "SQL analytics"
-# }
-#
 locals {
 
+  # Sort keys to ensure consistent ordering matching the input list
+  sorted_profile_keys = sort(keys(awscc_datazone_project_profile.project_profiles))
+
   profile_names = [
-    for result in data.local_file.create_project_profile_results : jsondecode(result.content).name
+    for k in local.sorted_profile_keys : awscc_datazone_project_profile.project_profiles[k].name
   ]
 
   # Create an array of profile IDs
   profile_ids = [
-    for result in data.local_file.create_project_profile_results : jsondecode(result.content).id
+    for k in local.sorted_profile_keys : awscc_datazone_project_profile.project_profiles[k].project_profile_id
   ]
 }
 
 # Save each profile_name -> profile_id mapping to SSM parameter store
 resource "aws_ssm_parameter" "smus_project_profile_ids" {
 
-  count       = length(local.profile_names)
-  name 		    = "/${var.APP}/${var.ENV}/project_profile_${count.index + 1}"
-  value       = "${local.profile_ids[count.index]}:${local.profile_names[count.index]}"  
-  type        = "SecureString"
-  key_id      = data.aws_kms_key.ssm_kms_key.key_id
+  count  = length(local.profile_names)
+  name   = "/${var.APP}/${var.ENV}/project_profile_${count.index + 1}"
+  value  = "${local.profile_ids[count.index]}:${local.profile_names[count.index]}"
+  type   = "SecureString"
+  key_id = data.aws_kms_key.ssm_kms_key.key_id
 
   tags = {
     Application = var.APP
     Environment = var.ENV
-    Usage = "SMUS Domain"
+    Usage       = "SMUS Domain"
   }
 }
 
 # Grant access to all the Identity Center users on all the newly created project profiles
-resource "null_resource" "project_profile_policy_grants" {
-  
-  depends_on = [ null_resource.create_project_profile ]
+resource "awscc_datazone_policy_grant" "project_profile_policy_grants" {
 
-  provisioner "local-exec" {
-    command = <<-EOT
-      aws datazone add-policy-grant \
-        --domain-identifier "${local.domain_id}" \
-        --entity-identifier "${local.root_domain_unit_id}" \
-        --entity-type "DOMAIN_UNIT" \
-        --policy-type "CREATE_PROJECT_FROM_PROJECT_PROFILE" \
-        --principal '${jsonencode({
-          "user": {
-            "allUsersGrantFilter": {}
-          }
-        })}' \
-        --detail '${jsonencode({
-          "createProjectFromProjectProfile": {
-            "projectProfiles": local.profile_ids,
-          }
-        })}'
-    EOT
+  depends_on = [awscc_datazone_project_profile.project_profiles]
+
+  domain_identifier = local.domain_id
+  entity_identifier = local.root_domain_unit_id
+  entity_type       = "DOMAIN_UNIT"
+  policy_type       = "CREATE_PROJECT_FROM_PROJECT_PROFILE"
+
+  principal = {
+    user = {
+      all_users_grant_filter = "{}"
+    }
   }
 
-  triggers = {
-    domain_id = local.domain_id
+  detail = {
+    create_project_from_project_profile = {
+      project_profiles = local.profile_ids
+    }
   }
 }

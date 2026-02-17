@@ -20,7 +20,7 @@ locals {
   ])
 
   # Convert to lists for sequential processing
-  user_emails_list = tolist(toset(nonsensitive(local.user_emails)))
+  user_emails_list         = tolist(toset(nonsensitive(local.user_emails)))
   domain_owner_emails_list = tolist(toset(nonsensitive(local.domain_owner_emails)))
 
   # Detect operating system
@@ -60,8 +60,8 @@ data "aws_identitystore_user" "domain_owners" {
 
 # Add wait time for SSO Admin operations to complete
 resource "time_sleep" "wait_for_sso_operations" {
-  depends_on = [ 
-    null_resource.create_smus_domain,
+  depends_on = [
+    aws_datazone_domain.smus_domain,
     data.aws_identitystore_user.users,
     data.aws_identitystore_user.domain_owners
   ]
@@ -73,13 +73,13 @@ resource "null_resource" "create_user_profiles_sequentially" {
   count = local.is_windows ? 0 : 1
 
   depends_on = [
-    null_resource.create_smus_domain,
+    aws_datazone_domain.smus_domain,
     time_sleep.wait_for_sso_operations
   ]
 
   triggers = {
     user_emails = join(",", local.user_emails_list)
-    domain_id = local.domain_id
+    domain_id   = local.domain_id
   }
 
   provisioner "local-exec" {
@@ -125,40 +125,40 @@ resource "null_resource" "create_user_profiles_sequentially" {
 resource "awscc_datazone_user_profile" "user_windows" {
   for_each = local.is_windows ? toset(nonsensitive(local.user_emails)) : toset([])
 
-  depends_on = [ 
-    null_resource.create_smus_domain,
+  depends_on = [
+    aws_datazone_domain.smus_domain,
     time_sleep.wait_for_sso_operations
   ]
-  
+
   domain_identifier = local.domain_id
   user_identifier   = data.aws_identitystore_user.users[each.key].user_id
-  user_type = "SSO_USER"
-  status = "ASSIGNED"
+  user_type         = "SSO_USER"
+  status            = "ASSIGNED"
 
   # Add lifecycle rule to handle conflicts and prevent unnecessary recreation
   lifecycle {
-    ignore_changes = [status]
+    ignore_changes        = [status]
     create_before_destroy = false
   }
 }
 
 # Platform-specific wait resources
 resource "time_sleep" "wait_for_user_profiles_unix" {
-  count = local.is_windows ? 0 : 1
-  depends_on = [null_resource.create_user_profiles_sequentially]
+  count           = local.is_windows ? 0 : 1
+  depends_on      = [null_resource.create_user_profiles_sequentially]
   create_duration = "15s"
 }
 
 # Add additional wait before triggering root owners - Windows
 resource "time_sleep" "wait_for_user_profiles_windows" {
-  count = local.is_windows ? 1 : 0
-  depends_on = [awscc_datazone_user_profile.user_windows]
+  count           = local.is_windows ? 1 : 0
+  depends_on      = [awscc_datazone_user_profile.user_windows]
   create_duration = "30s"
 }
 
 # Platform-specific root owner assignment (Unix: bash with retry, Windows: direct CLI)
 resource "null_resource" "add_root_owners_unix" {
-  for_each = local.is_windows ? toset([]) : toset(nonsensitive(local.domain_owner_emails))
+  for_each   = local.is_windows ? toset([]) : toset(nonsensitive(local.domain_owner_emails))
   depends_on = [time_sleep.wait_for_user_profiles_unix]
 
   triggers = {
@@ -187,7 +187,7 @@ resource "null_resource" "add_root_owners_unix" {
 }
 
 resource "null_resource" "add_root_owners_windows" {
-  for_each = local.is_windows ? toset(nonsensitive(local.domain_owner_emails)) : toset([])
+  for_each   = local.is_windows ? toset(nonsensitive(local.domain_owner_emails)) : toset([])
   depends_on = [time_sleep.wait_for_user_profiles_windows]
 
   triggers = {
