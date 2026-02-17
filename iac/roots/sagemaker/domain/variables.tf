@@ -26,21 +26,9 @@ variable "SSM_KMS_KEY_ALIAS" {
   type = string
 }
 
-variable "blueprint_ids" {
+variable "blueprint_names" {
   type        = list(string)
-  description = "List of environment blueprint IDs to attach. This is a pre-defined list of identifiers already available in an account"
-  default     = []
-}
-
-variable "domain_user_ids" {
-  type        = list(string)
-  description = "List of domain user IDs to attach to the domain. Use the userId attribute from Identity Center."
-  default     = []
-}
-
-variable "domain_admin_ids" {
-  type        = list(string)
-  description = "List of domain admin IDs to attach to the domain. Use the userId attribute from Identity Center."
+  description = "List of environment blueprint names to enable on the domain (e.g. DataLake, MLExperiments, Tooling). Names are resolved to IDs dynamically via data source."
   default     = []
 }
 
@@ -71,7 +59,7 @@ variable "project_profiles" {
       deploymentMode         = string
       deploymentOrder        = optional(number)
       description            = string
-      environmentBlueprintId = string
+      environmentBlueprintName = string
       name                   = string
     }))
   }))
