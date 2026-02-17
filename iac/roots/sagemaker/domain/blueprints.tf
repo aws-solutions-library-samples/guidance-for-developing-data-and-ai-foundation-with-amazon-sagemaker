@@ -1,9 +1,28 @@
 // Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
+# Resolve blueprint names to IDs dynamically
+data "aws_datazone_environment_blueprint" "blueprints" {
+
+  for_each = toset(var.blueprint_names)
+
+  domain_id = local.domain_id
+  name      = each.value
+  managed   = true
+}
+
+locals {
+  # Map of blueprint name -> blueprint ID for easy lookup
+  blueprint_name_to_id = {
+    for name, bp in data.aws_datazone_environment_blueprint.blueprints : name => bp.id
+  }
+
+  blueprint_ids = values(local.blueprint_name_to_id)
+}
+
 resource "aws_datazone_environment_blueprint_configuration" "blueprint_configs" {
 
-  for_each = toset(var.blueprint_ids)
+  for_each = local.blueprint_name_to_id
 
   domain_id                = local.domain_id
   environment_blueprint_id = each.value
@@ -26,7 +45,7 @@ resource "aws_datazone_environment_blueprint_configuration" "blueprint_configs" 
 resource "awscc_datazone_policy_grant" "blueprint_policy_grants" {
 
   depends_on = [aws_datazone_environment_blueprint_configuration.blueprint_configs]
-  for_each   = toset(var.blueprint_ids)
+  for_each   = local.blueprint_name_to_id
 
   domain_identifier = local.domain_id
   entity_identifier = "${local.account_id}:${each.value}"

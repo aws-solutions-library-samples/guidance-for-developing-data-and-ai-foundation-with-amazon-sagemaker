@@ -16,7 +16,7 @@ locals {
           deployment_order         = env_config.deploymentOrder
           name                     = env_config.name
           description              = env_config.description
-          environment_blueprint_id = env_config.environmentBlueprintId
+          environment_blueprint_id = local.blueprint_name_to_id[env_config.environmentBlueprintName]
           aws_account = {
             aws_account_id = local.account_id
           }
