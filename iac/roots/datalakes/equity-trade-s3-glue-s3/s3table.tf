@@ -1,9 +1,19 @@
 // Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
+data "aws_kms_key" "s3tables_kms_key" {
+
+  key_id = "alias/${var.S3_TABLES_KMS_KEY_ALIAS}"
+}
+
 resource "aws_s3tables_table_bucket" "equity_trade" {
-  
+
   name = "equity-trade-s3-glue-s3table"
+
+  encryption_configuration {
+    sse_algorithm = "aws:kms"
+    kms_key_arn   = data.aws_kms_key.s3tables_kms_key.arn
+  }
 }
 
 resource "aws_s3tables_namespace" "equity_trade" {
@@ -14,11 +24,11 @@ resource "aws_s3tables_namespace" "equity_trade" {
 
 module "equity_trade" {
 
-  source     = "../../../templates/modules/s3-table-iceberg"
+  source = "../../../templates/modules/s3-table-iceberg"
 
   BUCKET_ARN = aws_s3tables_table_bucket.equity_trade.arn
   NAMESPACE  = aws_s3tables_namespace.equity_trade.namespace
-  TABLE_NAME  = "equity_trade_s3_glue_s3table"
+  TABLE_NAME = "equity_trade_s3_glue_s3table"
 
   FIELDS = [
     {
@@ -75,20 +85,20 @@ module "equity_trade" {
 }
 
 data "aws_iam_policy_document" "equity_trade_bucket_policy_document" {
-  
+
   statement {
-    sid = "AllowAthenaAccess"
+    sid    = "AllowAthenaAccess"
     effect = "Allow"
-    
+
     principals {
       type        = "Service"
       identifiers = ["athena.amazonaws.com"]
     }
-    
+
     actions = [
       "s3tables:*"
     ]
-    
+
     resources = [
       "${aws_s3tables_table_bucket.equity_trade.arn}/*",
       aws_s3tables_table_bucket.equity_trade.arn
@@ -96,18 +106,18 @@ data "aws_iam_policy_document" "equity_trade_bucket_policy_document" {
   }
 
   statement {
-    sid = "AllowGlueAccess"
+    sid    = "AllowGlueAccess"
     effect = "Allow"
-    
+
     principals {
       type        = "Service"
       identifiers = ["glue.amazonaws.com"]
     }
-    
+
     actions = [
       "s3tables:*"
     ]
-    
+
     resources = [
       "${aws_s3tables_table_bucket.equity_trade.arn}/*",
       aws_s3tables_table_bucket.equity_trade.arn

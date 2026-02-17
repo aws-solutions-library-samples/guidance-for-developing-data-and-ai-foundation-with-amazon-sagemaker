@@ -1,9 +1,19 @@
 // Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
+data "aws_kms_key" "s3tables_kms_key" {
+
+  key_id = "alias/${var.S3_TABLES_KMS_KEY_ALIAS}"
+}
+
 resource "aws_s3tables_table_bucket" "inventory" {
-  
+
   name = "finops-inventory-s3-glue-s3table"
+
+  encryption_configuration {
+    sse_algorithm = "aws:kms"
+    kms_key_arn   = data.aws_kms_key.s3tables_kms_key.arn
+  }
 }
 
 resource "aws_s3tables_namespace" "inventory" {
@@ -14,11 +24,11 @@ resource "aws_s3tables_namespace" "inventory" {
 
 module "inventory" {
 
-  source     = "../../../templates/modules/s3-table-iceberg"
+  source = "../../../templates/modules/s3-table-iceberg"
 
   BUCKET_ARN = aws_s3tables_table_bucket.inventory.arn
   NAMESPACE  = aws_s3tables_namespace.inventory.namespace
-  TABLE_NAME  = "finops_inventory_s3_glue_s3table"
+  TABLE_NAME = "finops_inventory_s3_glue_s3table"
 
   FIELDS = [
     {
@@ -110,20 +120,20 @@ module "inventory" {
 }
 
 data "aws_iam_policy_document" "inventory_bucket_policy_document" {
-  
+
   statement {
-    sid = "AllowAthenaAccess"
+    sid    = "AllowAthenaAccess"
     effect = "Allow"
-    
+
     principals {
       type        = "Service"
       identifiers = ["athena.amazonaws.com"]
     }
-    
+
     actions = [
       "s3tables:*"
     ]
-    
+
     resources = [
       "${aws_s3tables_table_bucket.inventory.arn}/*",
       aws_s3tables_table_bucket.inventory.arn
@@ -131,18 +141,18 @@ data "aws_iam_policy_document" "inventory_bucket_policy_document" {
   }
 
   statement {
-    sid = "AllowGlueAccess"
+    sid    = "AllowGlueAccess"
     effect = "Allow"
-    
+
     principals {
       type        = "Service"
       identifiers = ["glue.amazonaws.com"]
     }
-    
+
     actions = [
       "s3tables:*"
     ]
-    
+
     resources = [
       "${aws_s3tables_table_bucket.inventory.arn}/*",
       aws_s3tables_table_bucket.inventory.arn

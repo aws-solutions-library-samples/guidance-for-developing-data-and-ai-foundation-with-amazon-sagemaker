@@ -1,9 +1,19 @@
 // Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
+data "aws_kms_key" "s3tables_kms_key" {
+
+  key_id = "alias/${var.S3_TABLES_KMS_KEY_ALIAS}"
+}
+
 resource "aws_s3tables_table_bucket" "splunk" {
 
   name = "finops-usage-splunk-glue-s3table"
+
+  encryption_configuration {
+    sse_algorithm = "aws:kms"
+    kms_key_arn   = data.aws_kms_key.s3tables_kms_key.arn
+  }
 }
 
 resource "aws_s3tables_namespace" "splunk" {
@@ -14,11 +24,11 @@ resource "aws_s3tables_namespace" "splunk" {
 
 module "splunk" {
 
-  source     = "../../../templates/modules/s3-table-iceberg"
+  source = "../../../templates/modules/s3-table-iceberg"
 
   BUCKET_ARN = aws_s3tables_table_bucket.splunk.arn
   NAMESPACE  = aws_s3tables_namespace.splunk.namespace
-  TABLE_NAME  = "finops_usage_splunk_glue_s3table"
+  TABLE_NAME = "finops_usage_splunk_glue_s3table"
 
   FIELDS = [
     {
