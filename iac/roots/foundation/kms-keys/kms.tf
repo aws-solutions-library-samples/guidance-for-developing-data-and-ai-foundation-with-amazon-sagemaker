@@ -3,7 +3,7 @@
 
 resource "aws_kms_key" "sm_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-secrets-manager-secret-key"
@@ -36,7 +36,7 @@ POLICY
 
 resource "aws_kms_alias" "sm_primary_key_alias" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-secrets-manager-secret-key"
   target_key_id = aws_kms_key.sm_primary_key.key_id
@@ -44,7 +44,7 @@ resource "aws_kms_alias" "sm_primary_key_alias" {
 
 resource "aws_kms_key" "sm_secondary_key" {
 
-  provider            = aws.secondary
+  provider = aws.secondary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-secrets-manager-secret-key"
@@ -77,7 +77,7 @@ POLICY
 
 resource "aws_kms_alias" "sm_secondary_key_alias" {
 
-  provider      = aws.secondary
+  provider = aws.secondary
 
   name          = "alias/${var.APP}-${var.ENV}-secrets-manager-secret-key"
   target_key_id = aws_kms_key.sm_secondary_key.key_id
@@ -86,7 +86,7 @@ resource "aws_kms_alias" "sm_secondary_key_alias" {
 // Systems Manager
 resource "aws_kms_key" "ssm_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-systems-manager-secret-key"
@@ -119,7 +119,7 @@ POLICY
 
 resource "aws_kms_alias" "ssm_primary_key_alias" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-systems-manager-secret-key"
   target_key_id = aws_kms_key.ssm_primary_key.key_id
@@ -127,7 +127,7 @@ resource "aws_kms_alias" "ssm_primary_key_alias" {
 
 resource "aws_kms_key" "ssm_secondary_key" {
 
-  provider            = aws.secondary
+  provider = aws.secondary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-systems-manager-secret-key"
@@ -160,7 +160,7 @@ POLICY
 
 resource "aws_kms_alias" "ssm_secondary_key_alias" {
 
-  provider      = aws.secondary
+  provider = aws.secondary
 
   name          = "alias/${var.APP}-${var.ENV}-systems-manager-secret-key"
   target_key_id = aws_kms_key.ssm_secondary_key.key_id
@@ -169,7 +169,7 @@ resource "aws_kms_alias" "ssm_secondary_key_alias" {
 // S3
 resource "aws_kms_key" "s3_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-s3-secret-key"
@@ -222,7 +222,7 @@ POLICY
 
 resource "aws_kms_alias" "s3_primary_key_alias" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-s3-secret-key"
   target_key_id = aws_kms_key.s3_primary_key.key_id
@@ -230,7 +230,7 @@ resource "aws_kms_alias" "s3_primary_key_alias" {
 
 resource "aws_kms_key" "s3_secondary_key" {
 
-  provider            = aws.secondary
+  provider = aws.secondary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-s3-secret-key"
@@ -283,16 +283,167 @@ POLICY
 
 resource "aws_kms_alias" "s3_secondary_key_alias" {
 
-  provider      = aws.secondary
+  provider = aws.secondary
 
   name          = "alias/${var.APP}-${var.ENV}-s3-secret-key"
   target_key_id = aws_kms_key.s3_secondary_key.key_id
 }
 
+// S3 Tables
+resource "aws_kms_key" "s3tables_primary_key" {
+
+  provider = aws.primary
+
+  enable_key_rotation = true
+  description         = "${var.APP}-${var.ENV}-s3tables-secret-key"
+
+  tags = {
+    Application = var.APP
+    Environment = var.ENV
+    Usage       = "s3 tables"
+    Name        = "${var.APP}-${var.ENV}-s3tables-secret-key"
+  }
+
+  policy = <<POLICY
+{
+    "Version": "2012-10-17",
+    "Id": "key-s3tables-policy-1",
+    "Statement": [
+        {
+            "Sid": "Enable IAM User Permissions",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::${local.account_id}:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+        },
+        {
+            "Sid": "Allow Amazon S3 Tables use of the KMS key",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "s3tables.amazonaws.com"
+            },
+            "Action": [
+                "kms:GenerateDataKey*",
+                "kms:Decrypt*"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "aws:SourceAccount": "${local.account_id}"
+                }
+            }
+        },
+        {
+            "Sid": "Allow S3 Tables maintenance use of the KMS key",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "maintenance.s3tables.amazonaws.com"
+            },
+            "Action": [
+                "kms:GenerateDataKey*",
+                "kms:Decrypt*"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "aws:SourceAccount": "${local.account_id}"
+                }
+            }
+        }
+    ]
+}
+POLICY
+}
+
+resource "aws_kms_alias" "s3tables_primary_key_alias" {
+
+  provider = aws.primary
+
+  name          = "alias/${var.APP}-${var.ENV}-s3tables-secret-key"
+  target_key_id = aws_kms_key.s3tables_primary_key.key_id
+}
+
+resource "aws_kms_key" "s3tables_secondary_key" {
+
+  provider = aws.secondary
+
+  enable_key_rotation = true
+  description         = "${var.APP}-${var.ENV}-s3tables-secret-key"
+
+  tags = {
+    Application = var.APP
+    Environment = var.ENV
+    Usage       = "s3 tables"
+    Name        = "${var.APP}-${var.ENV}-s3tables-secret-key"
+  }
+
+  policy = <<POLICY
+{
+    "Version": "2012-10-17",
+    "Id": "key-s3tables-policy-2",
+    "Statement": [
+        {
+            "Sid": "Enable IAM User Permissions",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::${local.account_id}:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+        },
+        {
+            "Sid": "Allow Amazon S3 Tables use of the KMS key",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "s3tables.amazonaws.com"
+            },
+            "Action": [
+                "kms:GenerateDataKey*",
+                "kms:Decrypt*"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "aws:SourceAccount": "${local.account_id}"
+                }
+            }
+        },
+        {
+            "Sid": "Allow S3 Tables maintenance use of the KMS key",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "maintenance.s3tables.amazonaws.com"
+            },
+            "Action": [
+                "kms:GenerateDataKey*",
+                "kms:Decrypt*"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "aws:SourceAccount": "${local.account_id}"
+                }
+            }
+        }
+    ]
+}
+POLICY
+}
+
+resource "aws_kms_alias" "s3tables_secondary_key_alias" {
+
+  provider = aws.secondary
+
+  name          = "alias/${var.APP}-${var.ENV}-s3tables-secret-key"
+  target_key_id = aws_kms_key.s3tables_secondary_key.key_id
+}
+
 // Glue
 resource "aws_kms_key" "glue_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-glue-secret-key"
@@ -333,7 +484,7 @@ POLICY
 
 resource "aws_kms_alias" "glue_primary_key_alias" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-glue-secret-key"
   target_key_id = aws_kms_key.glue_primary_key.key_id
@@ -341,7 +492,7 @@ resource "aws_kms_alias" "glue_primary_key_alias" {
 
 resource "aws_kms_key" "glue_secondary_key" {
 
-  provider            = aws.secondary
+  provider = aws.secondary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-glue-secret-key"
@@ -374,7 +525,7 @@ POLICY
 
 resource "aws_kms_alias" "glue_secondary_key_alias" {
 
-  provider      = aws.secondary
+  provider = aws.secondary
 
   name          = "alias/${var.APP}-${var.ENV}-glue-secret-key"
   target_key_id = aws_kms_key.glue_secondary_key.key_id
@@ -383,7 +534,7 @@ resource "aws_kms_alias" "glue_secondary_key_alias" {
 // Athena
 resource "aws_kms_key" "athena_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-athena-secret-key"
@@ -416,7 +567,7 @@ POLICY
 
 resource "aws_kms_alias" "athena_primary_key_alias" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-athena-secret-key"
   target_key_id = aws_kms_key.athena_primary_key.key_id
@@ -424,7 +575,7 @@ resource "aws_kms_alias" "athena_primary_key_alias" {
 
 resource "aws_kms_key" "athena_secondary_key" {
 
-  provider            = aws.secondary
+  provider = aws.secondary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-athena-secret-key"
@@ -457,7 +608,7 @@ POLICY
 
 resource "aws_kms_alias" "athena_secondary_key_alias" {
 
-  provider      = aws.secondary
+  provider = aws.secondary
 
   name          = "alias/${var.APP}-${var.ENV}-athena-secret-key"
   target_key_id = aws_kms_key.athena_secondary_key.key_id
@@ -466,11 +617,11 @@ resource "aws_kms_alias" "athena_secondary_key_alias" {
 // Event Bridge
 resource "aws_kms_key" "event_bridge_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-event-bridge-secret-key"
-  
+
   policy = <<POLICY
 {
   "Version": "2012-10-17",
@@ -499,7 +650,7 @@ POLICY
 
 resource "aws_kms_alias" "event_bridge" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-event-bridge-secret-key"
   target_key_id = aws_kms_key.event_bridge_primary_key.key_id
@@ -507,7 +658,7 @@ resource "aws_kms_alias" "event_bridge" {
 
 resource "aws_kms_key" "event_bridge_secondary_key" {
 
-  provider            = aws.secondary
+  provider = aws.secondary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-event-bridge-secret-key"
@@ -540,7 +691,7 @@ POLICY
 
 resource "aws_kms_alias" "event_bridge_secondary_key_alias" {
 
-  provider      = aws.secondary
+  provider = aws.secondary
 
   name          = "alias/${var.APP}-${var.ENV}-event-bridge-secret-key"
   target_key_id = aws_kms_key.event_bridge_secondary_key.key_id
@@ -549,11 +700,11 @@ resource "aws_kms_alias" "event_bridge_secondary_key_alias" {
 // Cloudwatch
 resource "aws_kms_key" "cloudwatch_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-cloudwatch-secret-key"
-  
+
   tags = {
     Application = var.APP
     Environment = var.ENV
@@ -601,7 +752,7 @@ POLICY
 
 resource "aws_kms_alias" "cloudwatch_primary_key_alias" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-cloudwatch-secret-key"
   target_key_id = aws_kms_key.cloudwatch_primary_key.key_id
@@ -609,11 +760,11 @@ resource "aws_kms_alias" "cloudwatch_primary_key_alias" {
 
 resource "aws_kms_key" "cloudwatch_secondary_key" {
 
-  provider            = aws.secondary
+  provider = aws.secondary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-cloudwatch-secret-key"
-  
+
   tags = {
     Application = var.APP
     Environment = var.ENV
@@ -661,7 +812,7 @@ POLICY
 
 resource "aws_kms_alias" "cloudwatch_secondary_key_alias" {
 
-  provider      = aws.secondary
+  provider = aws.secondary
 
   name          = "alias/${var.APP}-${var.ENV}-cloudwatch-secret-key"
   target_key_id = aws_kms_key.cloudwatch_secondary_key.key_id
@@ -670,7 +821,7 @@ resource "aws_kms_alias" "cloudwatch_secondary_key_alias" {
 // Datazone
 resource "aws_kms_key" "dz_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-datazone-secret-key"
@@ -703,7 +854,7 @@ POLICY
 
 resource "aws_kms_alias" "dz_primary_key_alias" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-datazone-secret-key"
   target_key_id = aws_kms_key.dz_primary_key.key_id
@@ -711,7 +862,7 @@ resource "aws_kms_alias" "dz_primary_key_alias" {
 
 resource "aws_kms_key" "dz_secondary_key" {
 
-  provider            = aws.secondary
+  provider = aws.secondary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-datazone-secret-key"
@@ -744,7 +895,7 @@ POLICY
 
 resource "aws_kms_alias" "dz_secondary_key_alias" {
 
-  provider      = aws.secondary
+  provider = aws.secondary
 
   name          = "alias/${var.APP}-${var.ENV}-datazone-secret-key"
   target_key_id = aws_kms_key.dz_secondary_key.key_id
@@ -753,7 +904,7 @@ resource "aws_kms_alias" "dz_secondary_key_alias" {
 // EBS
 resource "aws_kms_key" "ebs_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-ebs-secret-key"
@@ -786,7 +937,7 @@ POLICY
 
 resource "aws_kms_alias" "ebs_primary_key_alias" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-ebs-secret-key"
   target_key_id = aws_kms_key.ebs_primary_key.key_id
@@ -794,7 +945,7 @@ resource "aws_kms_alias" "ebs_primary_key_alias" {
 
 resource "aws_kms_key" "ebs_secondary_key" {
 
-  provider            = aws.secondary
+  provider = aws.secondary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-ebs-secret-key"
@@ -827,7 +978,7 @@ POLICY
 
 resource "aws_kms_alias" "ebs_secondary_key_alias" {
 
-  provider      = aws.secondary
+  provider = aws.secondary
 
   name          = "alias/${var.APP}-${var.ENV}-ebs-secret-key"
   target_key_id = aws_kms_key.ebs_secondary_key.key_id
@@ -837,7 +988,7 @@ resource "aws_kms_alias" "ebs_secondary_key_alias" {
 
 resource "aws_kms_key" "dynamodb_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-dynamodb-secret-key"
@@ -879,7 +1030,7 @@ POLICY
 
 resource "aws_kms_alias" "dynamodb_primary_key_alias" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-dynamodb-secret-key"
   target_key_id = aws_kms_key.dynamodb_primary_key.id
@@ -887,7 +1038,7 @@ resource "aws_kms_alias" "dynamodb_primary_key_alias" {
 
 resource "aws_kms_key" "msk_primary_key" {
 
-  provider            = aws.primary
+  provider = aws.primary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-msk-secret-key"
@@ -920,7 +1071,7 @@ POLICY
 
 resource "aws_kms_alias" "msk_primary_key_alias" {
 
-  provider      = aws.primary
+  provider = aws.primary
 
   name          = "alias/${var.APP}-${var.ENV}-msk-secret-key"
   target_key_id = aws_kms_key.msk_primary_key.key_id
@@ -928,7 +1079,7 @@ resource "aws_kms_alias" "msk_primary_key_alias" {
 
 resource "aws_kms_key" "msk_secondary_key" {
 
-  provider            = aws.secondary
+  provider = aws.secondary
 
   enable_key_rotation = true
   description         = "${var.APP}-${var.ENV}-msk-secret-key"
@@ -961,7 +1112,7 @@ POLICY
 
 resource "aws_kms_alias" "msk_secondary_key_alias" {
 
-  provider      = aws.secondary
+  provider = aws.secondary
 
   name          = "alias/${var.APP}-${var.ENV}-msk-secret-key"
   target_key_id = aws_kms_key.msk_secondary_key.key_id
