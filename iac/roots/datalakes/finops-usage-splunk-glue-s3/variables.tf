@@ -26,6 +26,11 @@ variable "S3_KMS_KEY_ALIAS" {
   type = string
 }
 
+variable "S3_TABLES_KMS_KEY_ALIAS" {
+
+  type = string
+}
+
 variable "INSTANCE_TYPE" {
 
   type        = string

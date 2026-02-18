@@ -1,9 +1,19 @@
 // Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
+data "aws_kms_key" "s3tables_kms_key" {
+
+  key_id = "alias/${var.S3_TABLES_KMS_KEY_ALIAS}"
+}
+
 resource "aws_s3tables_table_bucket" "billing" {
-  
+
   name = "finops-billing-s3-glue-s3table"
+
+  encryption_configuration = {
+    sse_algorithm = "aws:kms"
+    kms_key_arn   = data.aws_kms_key.s3tables_kms_key.arn
+  }
 }
 
 resource "aws_s3tables_namespace" "billing" {
@@ -14,11 +24,11 @@ resource "aws_s3tables_namespace" "billing" {
 
 module "billing" {
 
-  source     = "../../../templates/modules/s3-table-iceberg"
+  source = "../../../templates/modules/s3-table-iceberg"
 
   BUCKET_ARN = aws_s3tables_table_bucket.billing.arn
   NAMESPACE  = aws_s3tables_namespace.billing.namespace
-  TABLE_NAME  = "finops_billing_s3_glue_s3table"
+  TABLE_NAME = "finops_billing_s3_glue_s3table"
 
   FIELDS = [
     {
@@ -550,20 +560,20 @@ module "billing" {
 }
 
 data "aws_iam_policy_document" "billing_bucket_policy_document" {
-  
+
   statement {
-    sid = "AllowAthenaAccess"
+    sid    = "AllowAthenaAccess"
     effect = "Allow"
-    
+
     principals {
       type        = "Service"
       identifiers = ["athena.amazonaws.com"]
     }
-    
+
     actions = [
       "s3tables:*"
     ]
-    
+
     resources = [
       "${aws_s3tables_table_bucket.billing.arn}/*",
       aws_s3tables_table_bucket.billing.arn
@@ -571,18 +581,18 @@ data "aws_iam_policy_document" "billing_bucket_policy_document" {
   }
 
   statement {
-    sid = "AllowGlueAccess"
+    sid    = "AllowGlueAccess"
     effect = "Allow"
-    
+
     principals {
       type        = "Service"
       identifiers = ["glue.amazonaws.com"]
     }
-    
+
     actions = [
       "s3tables:*"
     ]
-    
+
     resources = [
       "${aws_s3tables_table_bucket.billing.arn}/*",
       aws_s3tables_table_bucket.billing.arn

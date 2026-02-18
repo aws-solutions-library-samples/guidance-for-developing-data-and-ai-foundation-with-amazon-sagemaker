@@ -26,6 +26,11 @@ variable "S3_KMS_KEY_ALIAS" {
   type = string
 }
 
+variable "S3_TABLES_KMS_KEY_ALIAS" {
+
+  type = string
+}
+
 variable "INVENTORY_DATA_FILE" {
 
   type = string

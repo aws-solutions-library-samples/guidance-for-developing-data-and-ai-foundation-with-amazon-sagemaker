@@ -26,6 +26,11 @@ variable "S3_KMS_KEY_ALIAS" {
   type = string
 }
 
+variable "S3_TABLES_KMS_KEY_ALIAS" {
+
+  type = string
+}
+
 variable "EQUITY_TRADE_DATA_BUCKET" {
 
   type = string
