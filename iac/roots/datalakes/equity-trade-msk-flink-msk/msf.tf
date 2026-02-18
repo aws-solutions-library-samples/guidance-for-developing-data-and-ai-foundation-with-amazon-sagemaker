@@ -8,22 +8,22 @@
 
 data "aws_kms_key" "s3_kms_key" {
 
-  key_id   = "alias/${var.S3_KMS_KEY_ALIAS}"
+  key_id = "alias/${var.S3_KMS_KEY_ALIAS}"
 }
 
 module "flink_bucket" {
 
   source = "../../../templates/modules/bucket"
 
-  APP       = var.APP
-  ENV       = var.ENV
-  NAME      = "equity-trade-msk-flink-msk"
-  USAGE     = "equity-trade"
-  CMK_ARN   = data.aws_kms_key.s3_kms_key.arn
+  APP     = var.APP
+  ENV     = var.ENV
+  NAME    = "equity-trade-msk-flink-msk"
+  USAGE   = "equity-trade"
+  CMK_ARN = data.aws_kms_key.s3_kms_key.arn
 }
 
 resource "aws_s3_object" "flink_code" {
-  
+
   bucket = module.flink_bucket.bucket_id
   key    = var.FLINK_S3_FILE_KEY
   source = "${path.module}/java-app/msf/target/msf-1.0-SNAPSHOT.jar"
@@ -88,6 +88,16 @@ data "aws_iam_policy_document" "flink_app" {
       "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:*"
     ]
   }
+  statement {
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:GenerateDataKey"
+    ]
+    resources = [
+      data.aws_kms_key.s3_kms_key.arn
+    ]
+  }
 }
 
 resource "aws_iam_role" "flink_app_role" {
@@ -99,7 +109,7 @@ resource "aws_iam_role" "flink_app_role" {
 resource "aws_iam_role_policy_attachment" "attachment_1" {
 
   policy_arn = "arn:aws:iam::aws:policy/AmazonVPCFullAccess"
-  role = aws_iam_role.flink_app_role.id  
+  role       = aws_iam_role.flink_app_role.id
 }
 
 resource "aws_iam_role_policy" "flink_app" {
@@ -122,7 +132,7 @@ resource "aws_cloudwatch_log_stream" "flink_app" {
 }
 
 resource "aws_kinesisanalyticsv2_application" "flink_app" {
-  
+
   name                   = "equity-trade-msk-flink-msk"
   runtime_environment    = var.FLINK_APP_RUNTIME_ENV
   service_execution_role = aws_iam_role.flink_app_role.arn
