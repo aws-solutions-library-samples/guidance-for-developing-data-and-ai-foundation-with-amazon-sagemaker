@@ -26,29 +26,17 @@ variable "SSM_KMS_KEY_ALIAS" {
   type = string
 }
 
-variable "blueprint_ids" {
+variable "blueprint_names" {
   type        = list(string)
-  description = "List of environment blueprint IDs to attach. This is a pre-defined list of identifiers already available in an account"
-  default = []
-}
-
-variable "domain_user_ids" {
-  type        = list(string)
-  description = "List of domain user IDs to attach to the domain. Use the userId attribute from Identity Center."
-  default = []
-}
-
-variable "domain_admin_ids" {
-  type        = list(string)
-  description = "List of domain admin IDs to attach to the domain. Use the userId attribute from Identity Center."
-  default = []
+  description = "List of environment blueprint names to enable on the domain (e.g. DataLake, MLExperiments, Tooling). Names are resolved to IDs dynamically via data source."
+  default     = []
 }
 
 variable "project_profiles" {
   type = list(object({
-    name = string
+    name        = string
     description = string
-    status = string
+    status      = string
     environmentConfigurations = list(object({
       awsAccount = object({
         awsAccountId = string
@@ -60,18 +48,18 @@ variable "project_profiles" {
         parameterOverrides = optional(list(object({
           isEditable = bool
           name       = string
-          value      = optional(string, "")
+          value      = optional(string)
         })))
         resolvedParameters = list(object({
           isEditable = bool
           name       = string
-          value = optional(string, "")
+          value      = optional(string)
         }))
       })
       deploymentMode         = string
       deploymentOrder        = optional(number)
       description            = string
-      environmentBlueprintId = string
+      environmentBlueprintName = string
       name                   = string
     }))
   }))
@@ -83,14 +71,14 @@ variable "DOMAIN_KMS_KEY_ALIAS" {
   type = string
 }
 
-variable SMUS_DOMAIN_VPC_ID {
+variable "SMUS_DOMAIN_VPC_ID" {
   type = string
 }
 
-variable SMUS_DOMAIN_PRIVATE_SUBNET_IDS {
+variable "SMUS_DOMAIN_PRIVATE_SUBNET_IDS" {
   type = string
 }
 
-variable SMUS_DOMAIN_AVAILABILITY_ZONE_NAMES {
+variable "SMUS_DOMAIN_AVAILABILITY_ZONE_NAMES" {
   type = string
 }
