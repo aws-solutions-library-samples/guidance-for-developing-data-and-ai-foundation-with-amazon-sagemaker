@@ -1410,6 +1410,81 @@ destroy-spark-code-interpreter:
 	TF_MODE=destroy $(ENV_PATH)utility-functions.sh exec_tf_for_env spark-code-interpreter
 	@echo "Destroying Spark Code Interpreter"
 
+#################### AgentCore ####################
+
+##### PREREQUISITES: deploy-price-glue-all deploy-trade-glue-all (the equity price and
+##### equity trade data lakes; the backend looks up their Iceberg tables, so plan fails
+##### without them), deploy-kms-keys, deploy-buckets and deploy-athena.
+##### The deploying principal must also be a Lake Formation data lake admin,
+##### because the backend grants LF permissions on the data lake tables.
+#####
+##### The three roots are ordered and must be applied in sequence. The gateway
+##### reads SSM parameters published by the backend, and the demo reads SSM
+##### parameters published by the gateway. Teardown runs in reverse.
+
+deploy-agentcore-backend:
+	@echo "Deploying AgentCore Backend"
+	(cd iac/roots/agentcore/backend; \
+		terraform init; \
+		terraform apply -auto-approve;)
+	@echo "Finished Deploying AgentCore Backend"
+
+destroy-agentcore-backend:
+	@echo "Destroying AgentCore Backend"
+	@echo "Note: memory strategies are torn down one at a time, allow 25 to 30 minutes"
+	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(AWS_ACCOUNT_ID)-$(APP_NAME)-$(ENV_NAME)-agentcore-lambda" || true
+	(cd iac/roots/agentcore/backend; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+	@echo "Finished Destroying AgentCore Backend"
+
+deploy-agentcore-gateway:
+	@echo "Deploying AgentCore Gateway"
+	(cd iac/roots/agentcore/gateway; \
+		terraform init; \
+		terraform apply -auto-approve;)
+	@echo "Finished Deploying AgentCore Gateway"
+
+destroy-agentcore-gateway:
+	@echo "Destroying AgentCore Gateway"
+	(cd iac/roots/agentcore/gateway; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+	@echo "Finished Destroying AgentCore Gateway"
+
+deploy-agentcore-demo:
+	@echo "Deploying AgentCore Demo"
+	(cd iac/roots/agentcore/demo; \
+		terraform init; \
+		terraform apply -auto-approve;)
+	@echo "Finished Deploying AgentCore Demo"
+
+destroy-agentcore-demo:
+	@echo "Destroying AgentCore Demo"
+	./build-script/empty-s3.sh empty_s3_bucket_by_name "$(AWS_ACCOUNT_ID)-$(APP_NAME)-$(ENV_NAME)-agentcore-demo" || true
+	(cd iac/roots/agentcore/demo; \
+		terraform init; \
+		terraform destroy -auto-approve;)
+	@echo "Finished Destroying AgentCore Demo"
+
+get-agentcore-demo-url:
+	@aws apigatewayv2 get-apis \
+		--region $(AWS_PRIMARY_REGION) \
+		--query "Items[?Name=='$(APP_NAME)-$(ENV_NAME)-agentcore-demo'].ApiEndpoint" \
+		--output text
+
+get-agentcore-demo-password:
+	@aws ssm get-parameter \
+		--region $(AWS_PRIMARY_REGION) \
+		--name "/$(APP_NAME)/$(ENV_NAME)/agentcore/demo-user-temp-password" \
+		--with-decryption \
+		--query Parameter.Value \
+		--output text
+
+# Short aliases, matching the commands documented in the module READMEs
+deploy-agentcore: deploy-agentcore-all
+destroy-agentcore: destroy-agentcore-all
+
 #################### Deploy All ####################
 
 deploy-data-pipeline:
@@ -1433,7 +1508,7 @@ destroy-data-pipeline:
 
 # Deploy all targets in the correct order, one make target at a time
 # Deploy all targets in the correct order, one make target at a time
-deploy-all: deploy-foundation-all deploy-idc-all deploy-domain-all deploy-projects-all deploy-glue-jars-all deploy-lake-formation-all deploy-athena-all deploy-billing-static-all deploy-billing-dynamic-all deploy-billing-cur-all deploy-inventory-static-all deploy-inventory-dynamic-all deploy-splunk-all deploy-price-glue-all deploy-trade-glue-all deploy-trade-msk-all deploy-trade-flink-all deploy-zetl-ddb-all deploy-project-configuration-all deploy-datazone-all deploy-quicksight-subscription-all deploy-snowflake-connection-all deploy-snowflake-z-etl-all deploy-quicksight-all deploy-spark-code-interpreter-all
+deploy-all: deploy-foundation-all deploy-idc-all deploy-domain-all deploy-projects-all deploy-glue-jars-all deploy-lake-formation-all deploy-athena-all deploy-billing-static-all deploy-billing-dynamic-all deploy-billing-cur-all deploy-inventory-static-all deploy-inventory-dynamic-all deploy-splunk-all deploy-price-glue-all deploy-trade-glue-all deploy-trade-msk-all deploy-trade-flink-all deploy-zetl-ddb-all deploy-project-configuration-all deploy-datazone-all deploy-quicksight-subscription-all deploy-snowflake-connection-all deploy-snowflake-z-etl-all deploy-quicksight-all deploy-spark-code-interpreter-all deploy-agentcore-all
 deploy-foundation-all: deploy-kms-keys deploy-iam-roles deploy-buckets deploy-vpc build-msk-data-generator-lambda-layer-zip deploy-msk
 deploy-idc-all: deploy-idc-acc disable-mfa
 deploy-domain-all: deploy-domain-prereq deploy-domain
@@ -1459,11 +1534,12 @@ deploy-snowflake-z-etl-all: deploy-equity-order-sf-zetl-fed start-equity-order-s
 deploy-quicksight-subscription-all: deploy-quicksight-subscription
 deploy-quicksight-all: deploy-quicksight-dataset
 deploy-spark-code-interpreter-all: deploy-spark-code-interpreter
+deploy-agentcore-all: deploy-agentcore-backend deploy-agentcore-gateway deploy-agentcore-demo
 
 #################### Destroy All ####################
 
 # Destroy all targets in the correct order, one make target at a time
-destroy-all: destroy-spark-code-interpreter-all destroy-snowflake-z-etl-all destroy-snowflake-connection-all destroy-datazone-all destroy-project-configuration-all destroy-zetl-ddb-all destroy-trade-flink-all destroy-trade-msk-all destroy-trade-glue-all destroy-price-glue-all destroy-splunk-all destroy-inventory-all destroy-billing-cur-all destroy-billing-all destroy-athena-all destroy-projects-all destroy-domain-all destroy-idc-all destroy-foundation-all
+destroy-all: destroy-agentcore-all destroy-spark-code-interpreter-all destroy-snowflake-z-etl-all destroy-snowflake-connection-all destroy-datazone-all destroy-project-configuration-all destroy-zetl-ddb-all destroy-trade-flink-all destroy-trade-msk-all destroy-trade-glue-all destroy-price-glue-all destroy-splunk-all destroy-inventory-all destroy-billing-cur-all destroy-billing-all destroy-athena-all destroy-projects-all destroy-domain-all destroy-idc-all destroy-foundation-all
 destroy-foundation-all: destroy-msk destroy-vpc destroy-buckets destroy-iam-roles destroy-kms-keys
 destroy-idc-all: destroy-idc-acc
 destroy-domain-all: destroy-domain destroy-domain-prereq
@@ -1483,3 +1559,4 @@ destroy-datazone-all: destroy-datazone-custom-project destroy-datazone-consumer-
 destroy-snowflake-connection-all: destroy-snowflake-connection
 destroy-snowflake-z-etl-all: destroy-equity-order-sf-zetl-fed
 destroy-spark-code-interpreter-all: destroy-spark-code-interpreter
+destroy-agentcore-all: destroy-agentcore-demo destroy-agentcore-gateway destroy-agentcore-backend

@@ -81,6 +81,12 @@ templateFilePathsStr="./set-env-vars.sh ./Makefile
 ./iac/roots/idc/disable-mfa/terraform.tfvars
 ./iac/roots/spark-code-interpreter/terraform.tfvars
 ./iac/roots/spark-code-interpreter/backend.tf
+./iac/roots/agentcore/demo/terraform.tfvars
+./iac/roots/agentcore/demo/backend.tf
+./iac/roots/agentcore/backend/terraform.tfvars
+./iac/roots/agentcore/backend/backend.tf
+./iac/roots/agentcore/gateway/terraform.tfvars
+./iac/roots/agentcore/gateway/backend.tf
 ./iac/roots/network/terraform.tfvars
 ./iac/roots/network/backend.tf
 ./iac/roots/foundation/buckets/terraform.tfvars

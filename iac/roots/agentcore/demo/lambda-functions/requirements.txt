@@ -1,0 +1,3 @@
+strands-agents[mcp]==1.35.0
+requests==2.33.1
+bedrock-agentcore[strands-agents]==1.20.0
