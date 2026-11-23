@@ -2,119 +2,131 @@
 
 ## Table of Contents
 
-- [About DAIVI](#about-daivi)
-  - [Solution Vision](#solution-vision)
+- [About DAIVI](#about-daivi-on-aws)
   - [Solution Architecture](#solution-architecture)
-  - [Solution Components](#solution-components)
+  - [Solution Capabilities](#solution-capabilities)
+- [Data Lakes](#data-lakes)
+- [Data Pipelines](#data-pipelines)
+- [SageMaker Integration](#sagemaker-integration)
+- [Agentic AI with Amazon Bedrock AgentCore](#agentic-ai-with-amazon-bedrock-agentcore)
 - [Management Data Lake for Cost Analytics](#management-data-lake-for-cost-analytics)
-  - [High Level Architecture](#high-level-architecture)
+- [Trading Data Lake](#trading-data-lake)
 - [Deploying DAIVI](./docs/main/solutions-deployment.md)
 - [Exploring DAIVI](./docs/demo/exploring-daivi.md)
-- [Security Recommendatioms](./docs/main/security-recommendations.md)
+- [Security Recommendations](./docs/main/security-recommendations.md)
 - [Contributors](#contributors)
 
 ## About DAIVI on AWS
 
-DAIVI is a reference solution with Terraform modules to accelerate development of Data, Analytics, AI and Visualization applications on AWS using the next generation "**Amazon SageMaker**" platform. The goal of the DAIVI solution is to provide engineers with sample Terraform modules to build their enterprise data platform on AWS. The solution is being developed working backward from customer priorities.
-
-The solution currently supports the first 6 modules marked in green in the solution roadmap below, that include
-
-1. Identity Center modules for Organization Level and Account Level Identity Centers with Users, Groups, Permissions and IAM Mapping
-2. Data Lake modules to create Hive Tables and Iceberg Tables, both on standard S3 bucket and S3 Table bucket
-3. Sagemake modules to provision domains and projects, add members to the projects, configure lakehouse and add compute
-4. Sagemaker Catalog modules to support standard assets, custom assets, data lineage, both standard and custom, data quality and data mesh
-5. DataZone modules to support standard assets, custom blueprints, data lineage, both standard and custom, data quality and data mesh
-6. Data pipeline module for Glue batch pipeline, Data exploration module for Athena and Data visualization module for Quicksight.
-
-### Solution Vision
-
-![Vision](./docs/images/daivi_vision.png)
+DAIVI is a reference architecture that illustrates how to rapidly deploy data, analytics, AI, and visualization solutions on AWS, using Amazon SageMaker, Amazon Quick Suite, and Amazon Bedrock AgentCore. The solution provides Infrastructure-as-Code (IaC) building blocks using Terraform to simplify the process of building enterprise data platforms on AWS. The goal is to provide engineers with sample Terraform modules that they can use as a starting point for their own implementations. The solution is being developed working backward from customer priorities.
 
 ### Solution Architecture
 
-![Vision](./docs/images/daivi_solution.png)
+The architecture spans 14 capability areas, from data onboarding and identity management through to visualization and agentic AI:
 
-### Solution Components
+![Solution Architecture](./docs/images/solution_architecture_daivi.png)
 
-#### Data Lakes
+### Solution Capabilities
 
-The solution supports modules to provision 1) Hive data lakes on standard S3 buckets 2) Iceberg data lakes on standard S3 buckets and 3) Iceberg data lakes on S3 table buckets. In addition,it covers how customers can implement 1) transaction data lakes 2) schema evolution and 3) time travel queries on Iceberg data lakes.
+| # | Capability | Description | AWS Services |
+|---|------------|-------------|--------------|
+| 1 | Data Onboarding | IaC modules to provision batch pipelines, streaming pipelines, zero-ETL ingestion and federated catalogs for external data sources | S3, Glue |
+| 2 | Batch Pipelines | Batch data pipelines using AWS Glue to ingest structured data from S3 into Hive or Iceberg data lakes on S3 buckets or S3 Table buckets | AWS Glue, Amazon EMR |
+| 3 | Streaming Pipelines | Streaming data pipelines using Apache Flink or Glue Streaming to ingest messages from MSK topics into data lakes, with support for streaming analytics | Amazon MSK, Apache Flink |
+| 4 | Zero-ETL Ingestion | Direct data movement between source and target systems without building ETL pipelines | Amazon DynamoDB |
+| 5 | Zero-ETL Federation | Direct querying of data across external sources without data movement or replication | Amazon Redshift, Snowflake, Databricks |
+| 6 | Identity Center | Provision IAM Identity Center instances at organization or account level, create users and groups, and grant permissions needed for SageMaker domains and projects | IAM Identity Center |
+| 7 | SageMaker Unified Studio | Provision SageMaker domains and projects, add members, configure lakehouse and compute, with IAM Identity Center integration for domain and project roles | Amazon SageMaker |
+| 8 | Lakehouse | Federate data lakes into SageMaker Lakehouse using Lake Formation or zero-ETL integrations, providing a unified view across all data sources | Lake Formation, SageMaker Lakehouse |
+| 9 | Data Governance | Create curated data assets, visualize data quality and data lineage, enforce governance policies for data access and alignment with business requirements | SageMaker Catalog, Lake Formation |
+| 10 | Data Collaboration | Produce data assets from the producer project, subscribe and consume them from the consumer project | SageMaker |
+| 11 | Data Analytics | Query data from data lakes using Athena, implement deep analytics using EMR | Amazon Athena, Amazon EMR |
+| 12 | Visualization | AI-powered dashboards and reports using data in Lakehouse, with built-in agents for conversational data exploration | Amazon Quick Suite |
+| 13 | AI / ML | Develop machine learning and AI applications | Amazon SageMaker AI |
+| 14 | Gen AI / Agentic AI | Develop GenAI and Agentic AI applications using Bedrock foundation models, Knowledge Bases, Guardrails and AgentCore | Amazon Bedrock, AgentCore, Strands Agents |
 
-#### Data Pipelines
+## Data Lakes
 
-The solution plans to support 1) batch data pipelines using Glue 2) streaming data pipeline using Glue and 3) streaming data pipeline using Flink. The initial release supports modules to provision batch data pipelines using Glue.
+The solution supports three data lake patterns:
 
-#### IAM Identity Center
+| Pattern | Format | Storage | Use Case |
+|---------|--------|---------|----------|
+| Hive tables | Parquet | Standard S3 | Legacy compatibility, simple reads |
+| Iceberg tables | Parquet with Iceberg metadata | Standard S3 | ACID transactions, schema evolution, time travel |
+| Iceberg on S3 Tables | Parquet with Iceberg metadata | S3 Table buckets | Managed table storage with automatic compaction |
 
-The solutions supports modules to provision IAM Identity Center instances, at organization-level or account-level, create users and groups and grant them required permissions.
+## Data Pipelines
 
-#### Sagemaker Unified Studio
+The solution supports batch, streaming and zero-ETL data pipeline patterns:
 
-The solutions supports modules to provision Sagemaker domains and Sagemaker projects, with integration with IAM Identity Center to support various Sagemaker domain/project roles. It provisions one domain and creates two projects, producer and consumer.
+- **Batch pipelines** using AWS Glue to load data from S3 into data lakes
+- **Streaming pipelines** using Amazon MSK and Apache Flink for real-time data ingestion
+- **Zero-ETL ingestion** from Amazon DynamoDB
+- **Zero-ETL federation** with Amazon Redshift, Snowflake and Databricks
 
-#### Sagemaker Lakehouse
+## SageMaker Integration
 
-The solutions supports modules to configure Sagemaker projects to load data lakes into Sagemaker Lakehouse.
+- **Domains and Projects** Provision SageMaker domains with IAM Identity Center integration, create producer and consumer projects with appropriate roles
+- **Lakehouse** Load data lakes into SageMaker Lakehouse for unified access
+- **Catalog** Standard and custom assets, data sources from data lakes, data quality rules, standard and custom lineage
+- **Data Mesh** Producer and consumer governance model with Lake Formation permissions
+- **QuickSight** Visualization dashboards connected to data lake sources via Athena
 
-#### Sagemaker Data Processing
+Note: Additional reading about DAIVI architecture and design principles [here](./docs/main/design-principles.md).
 
-The solutions demonstrates how to implement data processing using Athena, Redshift and EMR.
+## Agentic AI with Amazon Bedrock AgentCore
 
-#### Sagemaker Catalog
+The solution includes a financial analyst agent module that lets users ask questions in natural language. The agent determines which databases to query, writes the SQL, executes it through Athena and returns results. It can also search the web for additional context.
 
-The solutions supports modules to configure Sagemaker projects to create data sources and load assets from data lakes, view data quality and data lineage. It also supports modules to create custom assets and custom lineage.
+```
+User: "Which stocks were traded the most?"
+  → Agent calls get-databases and get-database-tables to learn the schema
+  → Agent writes SQL: SELECT security_id, SUM(quantity) ... GROUP BY security_id
+  → Agent calls execute-query via Athena
+  → Agent returns formatted results
+```
 
-#### Sagemaker Data Mesh
+The module is split into three independent Terraform roots:
 
-The solutions demonstrates how to implement a data mesh solution between a producer and consumer projects with proper data governance enforced by the producer project.
+- **Backend** Cognito auth, IAM roles, 4 Lambda functions (get-databases, get-database-tables, execute-query, web-search), AgentCore Memory, read-only Lake Formation grants on the equity trade and equity price data lake tables, SSM parameter interface
+- **Gateway** Amazon Bedrock AgentCore MCP gateway with CUSTOM_JWT auth, 4 tool targets wired to the Lambda functions
+- **Demo** Chat UI with API Gateway and Lambda running a Strands agent on Amazon Nova 2 Lite (default) or Claude Haiku 4.5
 
-#### Sagemaker Quicksight
+The gateway exposes tools over the Model Context Protocol (MCP), so any MCP-compatible client or framework can connect.
 
-The solutions demonstrates how to create visualization using Quicksight leveraging data from data lakes.
-
-Note: Additional reading about DAIVI architecture and Design principles [here](./docs/main/design-principles.md).
+For more details see the [AgentCore module README](./iac/roots/agentcore/README.md).
 
 ## Management Data Lake for Cost Analytics
 
-Working backward from the needs of a customer, the solution implements a sample management data lake for cost analytics to demonstrate how to create Hive and Iceberg data lakes on S3 buckets and S3 table buckets, and how to implement batch data pipelines using Glue.
+Working backward from the needs of a customer, the solution implements a management data lake for cost analytics to demonstrate how to create Hive and Iceberg data lakes on S3 buckets and S3 Table buckets, and how to implement batch data pipelines using Glue.
 
-### High level architecture
-
-![High Level Architecture](./docs/images/solution_architecture.png)
-
-### Data Lakes
-
-All three data pipelines below receive data from different data sources and store them in Hive and Iceberg data lakes using standard S3 buckets or S3 table bucket.
-
-#### 1. AWS Cost and Usage Data Lake
+### AWS Cost and Usage Data Lake
 
 The solution uses a Glue batch data pipeline to load AWS Cost and Usage report to Hive and Iceberg data lakes.
 
-![Cost](./docs/images/main/cost_usecase.png)
+![Cost Data Lake](./docs/images/main/cost_usecase.png)
 
-#### 2. AWS S3 Inventory Data Lake
+### AWS S3 Inventory Data Lake
 
 The solution uses a Glue batch data pipeline to load AWS S3 Inventory report to Hive and Iceberg data lakes.
 
-![Cost](./docs/images/main/inventory_usecase.png)
+![Inventory Data Lake](./docs/images/main/inventory_usecase.png)
 
-#### 3. Splunk Data Lake
+### Splunk Data Lake
 
 The solution uses a Glue batch data pipeline to load operational data from a Splunk instance into Iceberg data lakes.
 
-![Cost](./docs/images/main/splunk_usecase.png)
+![Splunk Data Lake](./docs/images/main/splunk_usecase.png)
 
 ## Trading Data Lake
 
-### High level architecture
-
-![High Level Architecture](./docs/images/trading_data_lake.png)
+![Trading Data Lake](./docs/images/trading_data_lake.png)
 
 ## Next Steps
 
 - [Deploying DAIVI](./docs/main/solutions-deployment.md)
 - [Exploring DAIVI](./docs/demo/exploring-daivi.md)
-- [Security Recommendatioms](./docs/main/security-recommendations.md)
+- [Security Recommendations](./docs/main/security-recommendations.md)
 - Additional Resources:
   - [About Amazon SageMaker Unified Studio](./docs/amazon-sagemaker-unified-studio.md)
   - [About Amazon SageMaker Unified Studio Lakehouse](./docs/amazon-sagemaker-unified-studio-lakehouse.md)
@@ -134,3 +146,5 @@ The solution uses a Glue batch data pipeline to load operational data from a Spl
 - [Hemal Gadhiya](https://www.linkedin.com/in/hemal-gadhiya/)
 - [Shivanjani Pathipaka](https://www.linkedin.com/in/shivanjani-pathipaka/)
 - [Alseny Diallo](https://www.linkedin.com/in/dialloalseny/)
+- [Darasimi Oluwaniyi](https://www.linkedin.com/in/darasimi-oluwaniyi/)
+- [Donatas Kuchalskis](https://www.linkedin.com/in/donatas-kuchalskis-5b0b20170/)

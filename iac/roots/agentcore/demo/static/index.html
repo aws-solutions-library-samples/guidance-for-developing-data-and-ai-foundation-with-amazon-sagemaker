@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<!-- Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: MIT-0 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DAIVI Financial Analyst</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --accent: #2563eb; --accent-dark: #1d4ed8; --accent-light: #eff6ff; --sidebar-bg: #111827; --sidebar-text: #9ca3af; --border: #e5e7eb; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    .hidden { display: none !important; }
+    /* Demo banner, shown on every screen */
+    #demo-banner { flex-shrink: 0; padding: 4px 12px; background: #fef3c7; color: #92400e; border-bottom: 1px solid #fde68a; font-size: 12px; text-align: center; }
+    /* Login */
+    #login-screen { width: 100%; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: #f9fafb; }
+    #login-screen h2 { font-size: 28px; color: #111827; font-weight: 700; }
+    #login-screen p { font-size: 14px; color: #6b7280; }
+    #sign-in { padding: 12px 32px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    #sign-in:hover { background: var(--accent-dark); }
+    /* App */
+    #app { width: 100%; flex: 1; min-height: 0; display: flex; }
+    /* Sidebar */
+    #sidebar { width: 260px; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; flex-shrink: 0; }
+    .sidebar-brand { padding: 18px 16px 14px; border-bottom: 1px solid #1f2937; }
+    .sidebar-brand h1 { font-size: 15px; color: white; font-weight: 600; letter-spacing: 0.5px; }
+    .nav-section { padding: 10px 8px 0; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--sidebar-text); }
+    .nav-item:hover { background: #1f2937; color: white; }
+    .nav-item.active { background: var(--accent); color: white; }
+    .nav-item .icon { width: 18px; text-align: center; }
+    .recents-header { display: flex; align-items: center; padding: 16px 16px 6px; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+    #session-list { flex: 1; overflow-y: auto; padding: 0 8px; }
+    .session-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--sidebar-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .session-item:hover { background: #1f2937; color: white; }
+    .session-item.active { background: #2563eb22; color: #93c5fd; }
+    .session-item .count { font-size: 11px; background: #1f2937; padding: 2px 6px; border-radius: 8px; flex-shrink: 0; }
+    .settings-section { border-top: 1px solid #1f2937; padding: 8px; }
+    .settings-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; color: #9ca3af; cursor: pointer; }
+    .settings-header:hover { color: white; }
+    .settings-items { padding-left: 12px; }
+    .settings-item { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--sidebar-text); }
+    .settings-item:hover { background: #1f2937; color: white; }
+    .settings-item .icon { width: 16px; text-align: center; font-size: 12px; }
+    .user-footer { border-top: 1px solid #1f2937; padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+    .user-name { font-size: 13px; color: #d1d5db; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #sign-out-link { margin-left: auto; font-size: 11px; color: #6b7280; cursor: pointer; }
+    #sign-out-link:hover { color: white; }
+    /* Main */
+    #main { flex: 1; display: flex; flex-direction: column; background: #ffffff; }
+    /* Welcome */
+    #welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+    #greeting { font-size: 26px; font-weight: 400; color: #111827; margin-bottom: 32px; }
+    .input-card { width: 100%; max-width: 600px; border: 1px solid var(--border); border-radius: 10px; background: white; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .input-top { display: flex; align-items: center; padding: 10px 14px 0; }
+    .agent-label { font-size: 13px; font-weight: 500; color: #374151; }
+    #prompt { width: 100%; border: none; outline: none; padding: 10px 14px; font-size: 14px; resize: none; min-height: 40px; max-height: 120px; font-family: inherit; }
+    #prompt::placeholder { color: #9ca3af; }
+    .input-bottom { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-top: 1px solid #f3f4f6; }
+    .input-bottom-left { display: flex; align-items: center; gap: 8px; }
+    .input-bottom-right { display: flex; align-items: center; gap: 8px; }
+    #model-picker { font-size: 12px; color: #374151; background: #f9fafb; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+    #send-btn { width: 32px; height: 32px; border-radius: 6px; background: var(--accent); border: none; color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    #send-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+    .chips { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+    .chip { padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; color: #374151; cursor: pointer; background: white; }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+    /* Chat */
+    #chat { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .msg { max-width: 75%; padding: 12px 16px; border-radius: 10px; line-height: 1.6; font-size: 14px; }
+    .msg.user { align-self: flex-end; background: var(--accent); color: white; white-space: pre-wrap; }
+    .msg.assistant { align-self: flex-start; background: #f9fafb; border: 1px solid var(--border); }
+    .msg.assistant p { margin-bottom: 8px; }
+    .msg.assistant p:last-child { margin-bottom: 0; }
+    .msg.assistant pre { background: #f3f4f6; padding: 10px; border-radius: 6px; overflow-x: auto; margin: 8px 0; }
+    .msg.assistant code { font-size: 13px; }
+    .msg.assistant table { border-collapse: collapse; margin: 8px 0; font-size: 13px; width: 100%; }
+    .msg.assistant th, .msg.assistant td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+    .msg.assistant th { background: #f9fafb; }
+    .msg.thinking { align-self: flex-start; background: #f9fafb; border: 1px solid var(--border); color: #6b7280; font-style: italic; padding: 12px 16px; border-radius: 10px; font-size: 14px; }
+    #chat-input-bar { padding: 16px 24px; background: white; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: flex-end; }
+    #chat-input-bar textarea { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; resize: none; min-height: 40px; max-height: 100px; font-family: inherit; }
+    #chat-input-bar textarea:focus { border-color: var(--accent); }
+    #chat-send { padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+    #chat-send:disabled { background: #d1d5db; cursor: not-allowed; }
+    /* Modals */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal { background: white; border-radius: 10px; width: 480px; max-height: 70vh; overflow-y: auto; padding: 24px; }
+    .modal h3 { font-size: 16px; margin-bottom: 16px; color: #111827; }
+    .modal textarea { width: 100%; min-height: 120px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .modal-actions button { padding: 8px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+    .btn-primary { background: var(--accent); color: white; border: none; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-secondary { background: white; color: #374151; border: 1px solid var(--border); }
+    .tool-item { padding: 10px 0; border-bottom: 1px solid #f3f4f6; }
+    .tool-item:last-child { border-bottom: none; }
+    .tool-name { font-weight: 500; font-size: 14px; color: #111827; }
+    .tool-desc { font-size: 13px; color: #6b7280; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div id="demo-banner" role="note">Demo only - not for production use</div>
+
+  <div id="login-screen">
+    <h2>DAIVI</h2>
+    <p>Financial data analytics powered by AI. Sign in to get started.</p>
+    <button id="sign-in">Sign In</button>
+  </div>
+
+  <div id="app" class="hidden">
+    <aside id="sidebar">
+      <div class="sidebar-brand"><h1>DAIVI</h1></div>
+      <div class="nav-section">
+        <div class="nav-item active" id="new-chat-btn"><span class="icon">+</span> New chat</div>
+      </div>
+      <div class="recents-header"><span>Recents</span></div>
+      <div id="session-list"></div>
+      <div class="settings-section">
+        <div class="settings-header" id="settings-toggle">Settings</div>
+        <div class="settings-items">
+          <div class="settings-item" id="prefs-btn"><span class="icon">◑</span> Preferences</div>
+        </div>
+      </div>
+      <div class="user-footer">
+        <div class="user-avatar" id="user-avatar"></div>
+        <span class="user-name" id="user-name-el"></span>
+        <span id="sign-out-link">Sign out</span>
+      </div>
+    </aside>
+    <div id="main">
+      <div id="welcome">
+        <div id="greeting"></div>
+        <div class="input-card">
+          <div class="input-top"><span class="agent-label">DAIVI</span></div>
+          <textarea id="prompt" placeholder="Ask a question about your data..." rows="1"></textarea>
+          <div class="input-bottom">
+            <div class="input-bottom-left"></div>
+            <div class="input-bottom-right">
+              <select id="model-picker"><option value="nova">Nova 2 Lite</option><option value="haiku">Haiku</option></select>
+              <button id="send-btn">→</button>
+            </div>
+          </div>
+        </div>
+        <div class="chips">
+          <div class="chip" data-prompt="Which stocks were traded the most?">Most traded</div>
+          <div class="chip" data-prompt="What databases are available?">List databases</div>
+          <div class="chip" data-prompt="Query recent equity trades">Recent trades</div>
+        </div>
+      </div>
+      <div id="chat" class="hidden"></div>
+      <div id="chat-input-bar" class="hidden">
+        <textarea id="chat-prompt" placeholder="Ask a follow-up..." rows="1"></textarea>
+        <button id="chat-send">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-container"></div>
+
+  <script>
+    const API_URL = "${API_URL}";
+    const COGNITO_DOMAIN = "${COGNITO_DOMAIN}";
+    const CLIENT_ID = "${CLIENT_ID}";
+    const REDIRECT_URI = "${REDIRECT_URI}";
+
+    // Cached element references (populated after DOMContentLoaded)
+    const $ = id => document.getElementById(id);
+    let chatEl, promptEl, chatPromptEl, sessionListEl, modelPicker, modalContainer;
+
+    let idToken = null, currentSessionId = "", userName = "", userEmail = "";
+
+    function parseJwt(t) {
+      try { return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); }
+      catch { return {}; }
+    }
+
+    async function exchangeCode(code) {
+      const body = new URLSearchParams({ grant_type:"authorization_code", client_id:CLIENT_ID, code, redirect_uri:REDIRECT_URI });
+      try {
+        const r = await fetch(`$${COGNITO_DOMAIN}/oauth2/token`, { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body });
+        const d = await r.json();
+        if (d.id_token) { idToken = d.id_token; sessionStorage.setItem("id_token", idToken); window.history.replaceState({},"",REDIRECT_URI); showApp(); }
+        else alert("Login failed: " + (d.error_description||d.error));
+      } catch(e) { alert("Login failed: "+e.message); }
+    }
+
+    function signIn() {
+      window.location.href=`$${COGNITO_DOMAIN}/login?response_type=code&client_id=$${CLIENT_ID}&redirect_uri=$${encodeURIComponent(REDIRECT_URI)}&scope=openid+email`;
+    }
+
+    function signOut() {
+      sessionStorage.removeItem("id_token");
+      window.location.href=`$${COGNITO_DOMAIN}/logout?client_id=$${CLIENT_ID}&logout_uri=$${encodeURIComponent(REDIRECT_URI)}`;
+    }
+
+    function showApp() {
+      $("login-screen").classList.add("hidden");
+      $("app").classList.remove("hidden");
+      const claims = parseJwt(idToken);
+      userEmail = claims.email || "User";
+      userName = userEmail.split("@")[0].replace(/[._-]/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+      $("user-avatar").textContent = userName.split(" ").map(w=>w[0]).join("").slice(0,2);
+      $("user-name-el").textContent = userName;
+      $("greeting").textContent = "Ask me anything about your data.";
+      loadSessions();
+    }
+
+    async function api(body) {
+      const r = await fetch(API_URL, { method:"POST", headers:{"Content-Type":"application/json","Authorization":`Bearer $${idToken}`}, body:JSON.stringify(body) });
+      if (r.status===401) { sessionStorage.removeItem("id_token"); signIn(); return null; }
+      // Non-2xx responses may come from API Gateway rather than the Lambda,
+      // for example a 503 when an agent turn exceeds the 30 second integration
+      // timeout. Those bodies carry neither "response" nor "error", so the
+      // HTTP status is surfaced as the error message.
+      let d = null;
+      try { d = await r.json(); } catch { d = null; }
+      if (!r.ok) {
+        const detail = (d && (d.error || d.message)) || r.statusText;
+        const hint = (r.status === 503 || r.status === 504)
+          ? " The request took longer than 30 seconds. Try a narrower question."
+          : "";
+        return { ...(d || {}), error: `Request failed (HTTP $${r.status}): $${detail}.$${hint}` };
+      }
+      return d || { error: "Empty response from server." };
+    }
+
+    // ----- Sessions -----
+
+    // Update active highlight client-side without re-fetching the session list
+    function highlightActiveSession() {
+      sessionListEl.querySelectorAll(".session-item").forEach(el => {
+        el.classList.toggle("active", el.dataset.sessionId === currentSessionId);
+      });
+    }
+
+    // Server fetch for the sidebar. Only call when sessions may have changed.
+    async function loadSessions() {
+      const d = await api({action: "list_sessions"});
+      if (!d) return;
+      sessionListEl.innerHTML = "";
+      (d.sessions||[]).forEach(s => {
+        const div = document.createElement("div");
+        div.className = "session-item" + (s.session_id===currentSessionId?" active":"");
+        div.textContent = s.title || ("Chat " + (s.session_id || "").slice(0, 6));
+        div.title = s.title || s.session_id;
+        div.dataset.sessionId = s.session_id;
+        div.addEventListener("click", () => loadSession(s.session_id));
+        sessionListEl.appendChild(div);
+      });
+    }
+
+    // Disable inputs during async loads to prevent race conditions
+    function setInputsEnabled(enabled) {
+      [promptEl, chatPromptEl, $("send-btn"), $("chat-send")].forEach(el => {
+        if (el) el.disabled = !enabled;
+      });
+    }
+
+    async function loadSession(id) {
+      currentSessionId = id;
+      showChatView();
+      setInputsEnabled(false);
+      chatEl.innerHTML = "";
+      const d = await api({action: "load_session", session_id: id});
+      setInputsEnabled(true);
+      if (!d) return;
+      // Guard: user may have switched sessions while waiting for the response
+      if (currentSessionId !== id) return;
+      chatEl.innerHTML = "";
+      (d.messages||[]).forEach(m => addMsg(m.role, m.content));
+      chatEl.scrollTop = chatEl.scrollHeight;
+      highlightActiveSession();
+    }
+
+    function newChat() {
+      currentSessionId = "";
+      chatEl.innerHTML = "";
+      $("welcome").classList.remove("hidden");
+      chatEl.classList.add("hidden");
+      $("chat-input-bar").classList.add("hidden");
+      promptEl.value = "";
+      promptEl.focus();
+      highlightActiveSession();
+    }
+
+    function showChatView() {
+      $("welcome").classList.add("hidden");
+      chatEl.classList.remove("hidden");
+      $("chat-input-bar").classList.remove("hidden");
+    }
+
+    function addMsg(role, text) {
+      const el = document.createElement("div");
+      el.className = `msg $${role}`;
+      if (role==="assistant") el.innerHTML = DOMPurify.sanitize(marked.parse(text||""));
+      else el.textContent = text;
+      chatEl.appendChild(el);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      return el;
+    }
+
+    // Unified send: works from both the welcome input and the chat follow-up input
+    function send(fromWelcome) {
+      const el = fromWelcome ? promptEl : chatPromptEl;
+      const p = el.value.trim();
+      if (!p) return;
+      el.value = "";
+      if (fromWelcome) showChatView();
+      doSend(p);
+    }
+
+    async function doSend(prompt) {
+      // Capture which session this request belongs to. If the user switches
+      // chats while we wait for the response, we must not render the reply
+      // into a different session's chat window.
+      const requestSessionId = currentSessionId;
+      const isNewSession = !requestSessionId;
+
+      const userBubble = addMsg("user", prompt);
+      const thinking = document.createElement("div");
+      thinking.className = "msg thinking";
+      thinking.textContent = "Thinking...";
+      chatEl.appendChild(thinking);
+      chatEl.scrollTop = chatEl.scrollHeight;
+
+      const d = await api({ prompt, session_id: requestSessionId, model: modelPicker.value });
+
+      // If the user switched sessions while waiting, drop this response and
+      // remove the user bubble. The message is still persisted server-side
+      // under its original session_id and will reappear when that session
+      // is reopened.
+      const responseSessionId = (d && d.session_id) || requestSessionId;
+      if (currentSessionId !== requestSessionId && currentSessionId !== responseSessionId) {
+        thinking.remove();
+        if (userBubble && userBubble.parentNode) userBubble.remove();
+        return;
+      }
+
+      thinking.remove();
+      if (!d) return;
+      // For new chats, adopt the session_id assigned by the server
+      if (isNewSession && d.session_id) currentSessionId = d.session_id;
+      addMsg("assistant", d.response || d.error || "No response");
+
+      // Refresh the sidebar only when a new session was created. Continuing
+      // conversations don't change the sidebar list, so we can skip the API call.
+      if (isNewSession) loadSessions();
+    }
+
+    // ----- Modals -----
+
+    function closeModal() { modalContainer.innerHTML = ""; }
+
+    function openCustomization() {
+      const cur = localStorage.getItem("daivi-model")||"nova";
+      modalContainer.innerHTML = `<div class="modal-overlay"><div class="modal"><h3>Preferences</h3>
+        <p style="font-size:13px;color:#6b7280;margin-bottom:12px">Choose the model the agent uses. Nova 2 Lite is the default.</p>
+        <select id="cust-model" style="padding:8px;border-radius:6px;border:1px solid #e5e7eb;font-size:14px;width:100%">
+          <option value="nova" $${cur==="nova"?"selected":""}>Nova 2 Lite (Default)</option>
+          <option value="haiku" $${cur==="haiku"?"selected":""}>Claude Haiku 4.5</option>
+        </select>
+        <div class="modal-actions"><button class="btn-secondary" id="modal-cancel">Cancel</button><button class="btn-primary" id="modal-save">Save</button></div></div></div>`;
+      $("modal-cancel").addEventListener("click", closeModal);
+      $("modal-save").addEventListener("click", saveCustomization);
+      modalContainer.querySelector(".modal-overlay").addEventListener("click", e => {
+        if (e.target === e.currentTarget) closeModal();
+      });
+    }
+
+    function saveCustomization() {
+      const v = $("cust-model").value;
+      localStorage.setItem("daivi-model", v);
+      modelPicker.value = v;
+      closeModal();
+    }
+
+    // ----- Bootstrap -----
+
+    window.addEventListener("DOMContentLoaded", () => {
+      // Cache frequently-accessed elements
+      chatEl = $("chat");
+      promptEl = $("prompt");
+      chatPromptEl = $("chat-prompt");
+      sessionListEl = $("session-list");
+      modelPicker = $("model-picker");
+      modalContainer = $("modal-container");
+
+      // Wire up event handlers
+      $("sign-in").addEventListener("click", signIn);
+      $("sign-out-link").addEventListener("click", signOut);
+      $("new-chat-btn").addEventListener("click", newChat);
+      $("prefs-btn").addEventListener("click", openCustomization);
+      $("settings-toggle").addEventListener("click", function () {
+        this.nextElementSibling.classList.toggle("hidden");
+      });
+      $("send-btn").addEventListener("click", () => send(true));
+      $("chat-send").addEventListener("click", () => send(false));
+      promptEl.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(true); }
+      });
+      chatPromptEl.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(false); }
+      });
+      document.querySelectorAll(".chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+          promptEl.value = chip.dataset.prompt;
+          send(true);
+        });
+      });
+
+      // Restore the saved model preference, ignoring values the picker no longer offers
+      const saved = localStorage.getItem("daivi-model");
+      if (saved && [...modelPicker.options].some(o => o.value === saved)) modelPicker.value = saved;
+
+      // Auth flow: handle Cognito callback or restore existing session
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      if (code) exchangeCode(code);
+      else {
+        idToken = sessionStorage.getItem("id_token");
+        if (idToken) showApp();
+      }
+    });
+  </script>
+</body>
+</html>

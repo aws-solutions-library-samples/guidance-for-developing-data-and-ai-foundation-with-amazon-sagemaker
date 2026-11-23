@@ -80,3 +80,10 @@ iac/roots/sagemaker/domain/*.out
 # Claude Code local files
 .claude/
 CLAUDE.md
+
+# Lambda layers
+# The built layer payloads (downloaded packages, zips) are ignored, but the
+# requirements files that drive those builds must be tracked, since the
+# Terraform layer build hashes them to decide when to rebuild.
+**/lambda-layers/*
+!**/lambda-layers/*-requirements.txt

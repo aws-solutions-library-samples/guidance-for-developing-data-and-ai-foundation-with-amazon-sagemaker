@@ -169,6 +169,7 @@ You will need to deploy the following modules in order to deploy the whole solut
 | 28    | [Spark Code Interpreter](#28-spark-code-interpreter)                                                          |
 | 29    | [Post Deployment Testing](#29-post-deployment-testing)                                                        |
 | 30    | [Clean Up Cache](#30-clean-up-cache)                                                                          |
+| 31    | [AgentCore](#31-agentcore)                                                                                    |
 
 ---
 
@@ -1189,6 +1190,87 @@ This module helps users clean up Terraform cache from local machine. Please run 
 ```
 make clean-tf-cache
 ```
+
+## 31. **AgentCore**
+
+This module deploys an Agentic AI financial analyst powered by Amazon Bedrock AgentCore. It consists of three independent Terraform roots that must be deployed in order: backend → gateway → demo.
+
+> [!NOTE]
+> The AgentCore module uses AWS Terraform provider v6 (`~> 6.0`), independent from the rest of the solution (which uses v5). The deployer role must be a Lake Formation admin before first deploy.
+
+#### Prerequisites
+
+- Modules 15 (Equity Price S3-Glue-S3 Data Lake) and 16 (Equity Trade S3-Glue-S3 Data Lake) must be deployed, including their Iceberg Glue jobs. The backend looks up the `equity_price_s3_glue_s3_iceberg` and `equity_trade_s3_glue_s3_iceberg` tables, so `terraform plan` fails if they do not exist. These modules in turn require Modules 1 (Foundation), 5 (Glue Iceberg Jar File), 6 (Lake Formation) and 7 (Athena)
+- Module 7 (Athena) must be deployed. The agent's queries run in the `{app}-{env}-workgroup` workgroup and write results to the `{account}-{app}-{env}-athena-output` bucket
+- The deployer role must be listed as a Lake Formation data lake admin
+- The account must be able to invoke Amazon Nova 2 Lite and Claude Haiku 4.5 in Amazon Bedrock. Anthropic models require a one-time use case form per account
+- `pip3` installed locally (for Lambda layer builds)
+
+#### To deploy the module:
+
+```bash
+# 1. Backend (creates Lambdas, Cognito, SSM params)
+cd iac/roots/agentcore/backend
+terraform init
+terraform apply
+
+# 2. Gateway (reads backend SSM params, creates MCP gateway)
+cd ../gateway
+terraform init
+terraform apply
+
+# 3. Demo UI (reads gateway SSM params, creates chat app)
+cd ../demo
+terraform init
+terraform apply
+```
+
+| Target                     | Result                                                                                          | Verification                                                                                                                                                                                                                                                                                                          |
+| -------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| deploy-agentcore-backend   | Deploys Cognito, 4 Lambda functions, AgentCore Memory, read-only Lake Formation grants on the equity trade and price tables, SSM parameters | Verify the following resources are created: <br> 1. Cognito User Pool with domain and the user `daivi-agent@example.com` <br> 2. Lambda functions: `get-databases`, `get-database-tables`, `execute-query`, `web-search` <br> 3. AgentCore Memory `{app}_{env}_agentcore_memory` with 3 strategies <br> 4. Lake Formation `SELECT` and `DESCRIBE` grants on `equity_trade_s3_glue_s3_iceberg` and `equity_price_s3_glue_s3_iceberg` for the `{app}-{env}-agentcore-lambda-role` role <br> 5. SSM parameters under `/{app}/{env}/agentcore/*` |
+| deploy-agentcore-gateway   | Deploys Bedrock AgentCore MCP gateway with CUSTOM_JWT auth and 4 tool targets                   | Verify the following resources are created: <br> 1. AgentCore MCP gateway <br> 2. 4 gateway targets wired to backend Lambdas <br> 3. SSM parameter `/{app}/{env}/agentcore/gateway-url`                                                                                                                              |
+| deploy-agentcore-demo      | Deploys chat UI with API Gateway, Lambda (Strands agent on Nova 2 Lite or Claude Haiku 4.5), and Cognito auth  | Verify the following resources are created: <br> 1. API Gateway HTTP API with `GET /` and `POST /chat` routes <br> 2. Demo Lambda with Strands agent <br> 3. Access the API Gateway URL, sign in with `daivi-agent@example.com` (temporary password: run `make get-agentcore-demo-password`), and verify the chat responds to queries        |
+
+#### Post-Deployment Verification
+
+1. Get the demo URL:
+   ```bash
+   make get-agentcore-demo-url
+   ```
+2. Open the URL in a browser — you will see the login page
+3. Fetch the temporary password for the demo user `daivi-agent@example.com`:
+   ```bash
+   make get-agentcore-demo-password
+   ```
+   or
+   ```bash
+   aws ssm get-parameter \
+     --name "/{APP}/{ENV}/agentcore/demo-user-temp-password" \
+     --with-decryption \
+     --query Parameter.Value \
+     --output text
+   ```
+   Sign in with that username and password. The temporary password is only valid until the first sign-in.
+4. Cognito will prompt you to set a new password on first login
+5. After signing in, try a query like: "Which stocks were traded the most?"
+6. The agent should identify available databases, write SQL, execute it via Athena, and return results
+
+#### To destroy the module (in reverse order):
+
+```bash
+cd iac/roots/agentcore/demo
+terraform destroy
+
+cd ../gateway
+terraform destroy
+
+cd ../backend
+terraform destroy
+```
+
+For more details see the [AgentCore module README](../iac/roots/agentcore/README.md).
+
+---
 
 ## Troubleshooting
 
